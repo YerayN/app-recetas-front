@@ -1,2 +1,1 @@
-export const API = "https://app-recetas-production.up.railway.app/api";
-
+export const API = import.meta.env.VITE_API_URL;
