@@ -1,1 +1,28 @@
-/node_modules
+# --- Entorno Python ---
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Django ---
+db.sqlite3
+media/
+staticfiles/
+
+# --- Node / React ---
+node_modules/
+frontend/node_modules/
+frontend/dist/
+build/
+.vite/
+.env
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+
+# --- Editor ---
+.vscode/
+.idea/
+.DS_Store
