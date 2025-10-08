@@ -26,7 +26,6 @@ import {
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 
-// ✅ Importar la nueva función para obtener el token CSRF
 import { apiFetch, getCsrfToken } from "./services/api";
 
 function AppContent() {
@@ -35,10 +34,8 @@ function AppContent() {
   const { pathname } = useLocation();
   const { usuario, logout } = useContext(AuthContext);
 
-  // 🔹 Cargar recetas desde el backend
   const fetchRecetas = async () => {
     try {
-      // Esta llamada GET debería funcionar ahora gracias a SessionAuthentication en settings.py
       const data = await apiFetch("recetas/");
       setRecetas(data);
     } catch (error) {
@@ -47,54 +44,83 @@ function AppContent() {
   };
 
   const handleCreate = () => {
-    // Después de crear, solo recargamos la lista
     fetchRecetas();
   };
 
-  // 💡 Llamada para inicializar la obtención del CSRF Token
   useEffect(() => {
-    // 1. Obtener el token CSRF tan pronto como la aplicación cargue
     getCsrfToken();
-    
-    // 2. Cargar las recetas (se ejecutará al inicio y después del login)
     fetchRecetas();
+  }, [usuario]);
 
-  }, [usuario]); // Esto asegura que la autenticación y la carga inicial sucedan al montar/después del login
-
-
-  // ... (resto de tu componente AppContent sin cambios)
   const isAuthPage = pathname.includes("/login") || pathname.includes("/registro");
   const isProtected = !isAuthPage && usuario;
 
+  // Función para detectar ruta activa en móvil
+  const isActive = (path) =>
+    pathname === path ? "text-[#8B5CF6]" : "text-gray-500";
+
   return (
-    <div className="min-h-screen bg-[#FAF8F6]">
-      <header className="bg-white shadow-sm">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+    <div className="min-h-screen bg-[#FAF8F6] pb-16 md:pb-0">
+      {/* --- Header (solo en escritorio) --- */}
+      <header className="hidden md:block bg-white shadow-sm">
+        <nav className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
           <Link to="/" className="text-xl font-bold text-[#8B5CF6]">
             RecetasApp
           </Link>
           {isProtected && (
-            <div className="flex space-x-4">
-              <Link to="/plan-semanal" className="text-gray-600 hover:text-[#8B5CF6] transition">
-                <CalendarIcon className="h-6 w-6" />
+            <div className="flex space-x-6 text-sm font-medium text-gray-600">
+              <Link
+                to="/"
+                className={`hover:text-[#8B5CF6] transition ${
+                  pathname === "/" ? "text-[#8B5CF6]" : ""
+                }`}
+              >
+                Inicio
               </Link>
-              <Link to="/recetas" className="text-gray-600 hover:text-[#8B5CF6] transition">
-                <BookOpenIcon className="h-6 w-6" />
+              <Link
+                to="/recetas"
+                className={`hover:text-[#8B5CF6] transition ${
+                  pathname.startsWith("/recetas") && !pathname.includes("nueva")
+                    ? "text-[#8B5CF6]"
+                    : ""
+                }`}
+              >
+                Recetas
               </Link>
-              <Link to="/recetas/nueva" className="text-gray-600 hover:text-[#8B5CF6] transition">
-                <PlusCircleIcon className="h-6 w-6" />
+              <Link
+                to="/recetas/nueva"
+                className={`hover:text-[#8B5CF6] transition ${
+                  pathname.includes("/nueva") ? "text-[#8B5CF6]" : ""
+                }`}
+              >
+                Añadir receta
               </Link>
-              {/* <Link to="/lista-compra" className="text-gray-600 hover:text-[#8B5CF6] transition">
-                <ShoppingCartIcon className="h-6 w-6" />
-              </Link> */}
+              <Link
+                to="/plan-semanal"
+                className={`hover:text-[#8B5CF6] transition ${
+                  pathname.includes("/plan-semanal") ? "text-[#8B5CF6]" : ""
+                }`}
+              >
+                Plan semanal
+              </Link>
+              <Link
+                to="/lista-compra"
+                className={`hover:text-[#8B5CF6] transition ${
+                  pathname.includes("/lista-compra") ? "text-[#8B5CF6]" : ""
+                }`}
+              >
+                Lista
+              </Link>
+
               <button
                 onClick={() => {
                   logout();
                   navigate("/login");
                 }}
-                className="text-gray-600 hover:text-red-500 transition"
+                className="text-gray-600 hover:text-red-500 transition ml-4"
+                title="Cerrar sesión"
               >
-                <ArrowRightOnRectangleIcon className="h-6 w-6" />
+                <ArrowRightOnRectangleIcon className="h-5 w-5 inline-block" />
               </button>
             </div>
           )}
@@ -108,6 +134,8 @@ function AppContent() {
           )}
         </nav>
       </header>
+
+      {/* --- Main --- */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -121,8 +149,7 @@ function AppContent() {
                     Bienvenido a RecetasApp
                   </h1>
                   <p className="text-lg text-gray-600">
-                    Tu gestor de recetas y planificador semanal. Organiza tus recetas y genera tu lista
-                    de la compra en un solo lugar.
+                    Tu gestor de recetas y planificador semanal. Organiza tus recetas y genera tu lista de la compra en un solo lugar.
                   </p>
                 </section>
               </ProtectedRoute>
@@ -173,8 +200,52 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/lista-compra"
+            element={
+              <ProtectedRoute>
+                <div className="text-center py-10 text-gray-600">
+                  Aquí irá tu lista de la compra 🛒
+                </div>
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
+
+      {/* --- Bottom Nav (solo móvil) --- */}
+      {isProtected && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md flex justify-around py-2 z-50">
+          <Link to="/" className={`flex flex-col items-center ${isActive("/")}`}>
+            <HomeIcon className="h-6 w-6" />
+          </Link>
+          <Link
+            to="/recetas"
+            className={`flex flex-col items-center ${isActive("/recetas")}`}
+          >
+            <BookOpenIcon className="h-6 w-6" />
+          </Link>
+          <Link
+            to="/recetas/nueva"
+            className={`flex flex-col items-center ${isActive("/recetas/nueva")}`}
+          >
+            <PlusCircleIcon className="h-7 w-7" />
+          </Link>
+          <Link
+            to="/plan-semanal"
+            className={`flex flex-col items-center ${isActive("/plan-semanal")}`}
+          >
+            <CalendarIcon className="h-6 w-6" />
+          </Link>
+          <Link
+            to="/lista-compra"
+            className={`flex flex-col items-center ${isActive("/lista-compra")}`}
+          >
+            <ShoppingCartIcon className="h-6 w-6" />
+          </Link>
+        </nav>
+      )}
     </div>
   );
 }
