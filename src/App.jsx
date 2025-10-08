@@ -47,16 +47,13 @@ function AppContent() {
 // 🔹 Inicialización segura: obtener CSRF y cargar recetas si hay sesión
 useEffect(() => {
   const init = async () => {
-    // 1️⃣ Obtener token CSRF y asegurar cookies
+    // Asegura que el token CSRF y la cookie se sincronicen
     await getCsrfToken();
-
-    // 2️⃣ Cargar recetas solo si el usuario ya está logueado
-    if (usuario) {
-      await fetchRecetas();
-    }
+    if (usuario) await fetchRecetas();
   };
   init();
 }, [usuario]);
+
 
 // 🔹 Redirección automática según sesión (solo cuando AuthContext terminó de cargar)
 const [authLoaded, setAuthLoaded] = useState(false);

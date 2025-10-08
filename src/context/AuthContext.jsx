@@ -36,22 +36,36 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (username, password) => {
-    try {
-      // 1️⃣ Siempre renovar token CSRF antes del login
-      await getCsrfToken(true);
+  try {
+    // 1️⃣ Renovar token CSRF antes del login
+    await getCsrfToken(true);
 
-      await apiFetch("login/", {
-        method: "POST",
-        body: JSON.stringify({ username, password }),
-      });
+    // 2️⃣ Hacer login
+    const res = await apiFetch("login/", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
 
-      setUsuario({ logged: true, username });
-      return true;
-    } catch (error) {
-      console.error("Error en login:", error);
-      return false;
+    if (!res) throw new Error("Error en login");
+
+    // 3️⃣ Esperar hasta que la cookie de sesión esté visible (máx. 2 seg)
+    let tries = 0;
+    while (tries < 20 && !document.cookie.includes("sessionid")) {
+      await new Promise((r) => setTimeout(r, 100));
+      tries++;
     }
-  };
+
+    // 4️⃣ Volver a pedir el token CSRF (nuevo asociado a la sesión)
+    await getCsrfToken(true);
+
+    setUsuario({ logged: true, username });
+    return true;
+  } catch (error) {
+    console.error("Error en login:", error);
+    return false;
+  }
+};
+
 
   const logout = async () => {
     try {
