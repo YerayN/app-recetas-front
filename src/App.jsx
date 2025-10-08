@@ -47,34 +47,36 @@ function AppContent() {
 // 🔹 Inicialización segura: obtener CSRF y cargar recetas si hay sesión
 useEffect(() => {
   const init = async () => {
-    // 1️⃣ Obtener token CSRF y asegurar que las cookies se establecen
+    // 1️⃣ Obtener token CSRF y asegurar cookies
     await getCsrfToken();
 
-    // 2️⃣ Solo después, si el usuario está logueado, cargar sus recetas
+    // 2️⃣ Cargar recetas solo si el usuario ya está logueado
     if (usuario) {
       await fetchRecetas();
     }
   };
-
   init();
 }, [usuario]);
 
-// 🔹 Redirección automática según sesión
+// 🔹 Redirección automática según sesión (solo cuando AuthContext terminó de cargar)
+const [authLoaded, setAuthLoaded] = useState(false);
+
 useEffect(() => {
-  // Evita redirección prematura antes de cargar CSRF
-  if (usuario === null) return; // Espera a que AuthContext determine sesión
+  // este timeout da margen a AuthContext a resolver la sesión
+  const timer = setTimeout(() => setAuthLoaded(true), 200);
+  return () => clearTimeout(timer);
+}, []);
+
+useEffect(() => {
+  if (!authLoaded) return; // ⛔ espera a que AuthContext esté listo
 
   if (usuario && (pathname === "/login" || pathname === "/registro")) {
-    navigate("/"); // ya logueado → home
+    navigate("/"); // logueado → home
   } else if (!usuario && pathname !== "/login" && pathname !== "/registro") {
     navigate("/login"); // no logueado → login
   }
-}, [usuario, pathname, navigate]);
+}, [usuario, pathname, navigate, authLoaded]);
 
-
-  const isProtected = usuario;
-
-  const isActive = (path) => pathname === path;
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] pb-20 md:pb-0">
