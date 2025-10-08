@@ -6,6 +6,7 @@ import {
   Link,
   useNavigate,
   useLocation,
+  Navigate,
 } from "react-router-dom";
 
 import RecetaForm from "./pages/RecetaForm";
@@ -43,28 +44,33 @@ function AppContent() {
     }
   };
 
-  const handleCreate = () => {
-    fetchRecetas();
-  };
-
   useEffect(() => {
     getCsrfToken();
     fetchRecetas();
   }, [usuario]);
 
-  const isAuthPage = pathname.includes("/login") || pathname.includes("/registro");
-  const isProtected = !isAuthPage && usuario;
+  // 🔹 Redirección automática según sesión
+  useEffect(() => {
+    if (usuario && (pathname === "/login" || pathname === "/registro")) {
+      navigate("/"); // si ya estás logueado, ve al home
+    } else if (!usuario && pathname !== "/login" && pathname !== "/registro") {
+      navigate("/login"); // si no estás logueado, ve al login
+    }
+  }, [usuario, pathname, navigate]);
+
+  const isProtected = usuario;
 
   const isActive = (path) => pathname === path;
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] pb-20 md:pb-0">
-      {/* --- Header (solo escritorio) --- */}
+      {/* --- Header escritorio --- */}
       <header className="hidden md:block bg-white shadow-sm">
         <nav className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <Link to="/" className="text-xl font-bold text-[#8B5CF6]">
             RecetasApp
           </Link>
+
           {isProtected && (
             <div className="flex space-x-8 text-[15px] font-medium text-gray-600">
               <Link
@@ -78,7 +84,8 @@ function AppContent() {
               <Link
                 to="/recetas"
                 className={`hover:text-[#8B5CF6] transition ${
-                  pathname.startsWith("/recetas") && !pathname.includes("nueva")
+                  pathname.startsWith("/recetas") &&
+                  !pathname.includes("nueva")
                     ? "text-[#8B5CF6]"
                     : ""
                 }`}
@@ -122,14 +129,6 @@ function AppContent() {
               </button>
             </div>
           )}
-          {!usuario && !isAuthPage && (
-            <Link
-              to="/login"
-              className="px-4 py-2 rounded-lg bg-[#8B5CF6] text-white text-sm font-medium hover:bg-[#7C3AED] transition"
-            >
-              Iniciar Sesión
-            </Link>
-          )}
         </nav>
       </header>
 
@@ -138,6 +137,7 @@ function AppContent() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
+
           <Route
             path="/"
             element={
@@ -147,7 +147,8 @@ function AppContent() {
                     Bienvenido a RecetasApp
                   </h1>
                   <p className="text-lg text-gray-600">
-                    Tu gestor de recetas y planificador semanal. Organiza tus recetas y genera tu lista de la compra en un solo lugar.
+                    Tu gestor de recetas y planificador semanal. Organiza tus
+                    recetas y genera tu lista de la compra en un solo lugar.
                   </p>
                 </section>
               </ProtectedRoute>
@@ -167,7 +168,7 @@ function AppContent() {
             path="/recetas/nueva"
             element={
               <ProtectedRoute>
-                <RecetaForm onSubmit={handleCreate} onUpdate={fetchRecetas} />
+                <RecetaForm onUpdate={fetchRecetas} />
               </ProtectedRoute>
             }
           />
@@ -209,10 +210,13 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+
+          {/* 🔹 cualquier ruta desconocida → home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 
-      {/* --- Bottom Nav (solo móvil) --- */}
+      {/* --- Bottom Nav móvil --- */}
       {isProtected && (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md flex justify-around items-center py-3 z-50">
           {[
@@ -226,7 +230,7 @@ function AppContent() {
               key={i}
               to={to}
               className={`flex flex-col items-center relative ${
-                isActive(to) ? "text-[#8B5CF6]" : "text-gray-500"
+                pathname === to ? "text-[#8B5CF6]" : "text-gray-500"
               }`}
             >
               <Icon
@@ -234,8 +238,8 @@ function AppContent() {
                   to === "/recetas/nueva" ? "h-9 w-9" : "h-7 w-7"
                 } transition-colors`}
               />
-              {isActive(to) && (
-                <span className="absolute -bottom-2 w-1.5 h-1.5 bg-[#8B5CF6] rounded-full mt-1 transition-transform duration-300 scale-100"></span>
+              {pathname === to && (
+                <span className="absolute bottom-[-8px] w-1.5 h-1.5 bg-[#8B5CF6] rounded-full transition-transform duration-300 scale-100"></span>
               )}
             </Link>
           ))}
