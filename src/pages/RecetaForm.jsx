@@ -95,6 +95,64 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
       )}
 
       {/* inputs como los tenías */}
+
+      <div className="space-y-3">
+  <input
+    type="text"
+    value={nombre}
+    onChange={(e) => setNombre(e.target.value)}
+    placeholder="Nombre de la receta"
+    className="w-full border rounded-md p-2"
+    required
+  />
+
+  <textarea
+    value={descripcion}
+    onChange={(e) => setDescripcion(e.target.value)}
+    placeholder="Descripción"
+    className="w-full border rounded-md p-2"
+  />
+
+  <input
+    type="number"
+    value={tiempo}
+    onChange={(e) => setTiempo(e.target.value)}
+    placeholder="Tiempo de preparación (min)"
+    className="w-full border rounded-md p-2"
+  />
+
+  <textarea
+    value={instrucciones}
+    onChange={(e) => setInstrucciones(e.target.value)}
+    placeholder="Instrucciones"
+    className="w-full border rounded-md p-2"
+  />
+
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) => setImagen(e.target.files[0])}
+    className="w-full border rounded-md p-2"
+  />
+
+  {imagenExistente && (
+    <img
+      src={imagenExistente}
+      alt="Previsualización"
+      className="w-32 h-32 object-cover rounded-md"
+    />
+  )}
+
+  <button
+    type="submit"
+    disabled={subiendo}
+    className="bg-[#8B5CF6] text-white px-4 py-2 rounded-md hover:bg-[#7C3AED]"
+  >
+    {subiendo ? "Guardando..." : modo === "editar" ? "Actualizar" : "Guardar"}
+  </button>
+</div>
+
+
     </form>
   );
 }
