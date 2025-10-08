@@ -94,65 +94,78 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
         <p className="text-center text-sm font-medium text-gray-600">{mensaje}</p>
       )}
 
-      {/* inputs como los tenías */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+        <input
+          type="text"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          required
+          className="w-full border border-gray-200 rounded-lg p-2 focus:ring-2 focus:ring-[#8B5CF6]"
+        />
+      </div>
 
-      <div className="space-y-3">
-  <input
-    type="text"
-    value={nombre}
-    onChange={(e) => setNombre(e.target.value)}
-    placeholder="Nombre de la receta"
-    className="w-full border rounded-md p-2"
-    required
-  />
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+        <textarea
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
+          className="w-full border border-gray-200 rounded-lg p-2 focus:ring-2 focus:ring-[#8B5CF6]"
+        />
+      </div>
 
-  <textarea
-    value={descripcion}
-    onChange={(e) => setDescripcion(e.target.value)}
-    placeholder="Descripción"
-    className="w-full border rounded-md p-2"
-  />
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Tiempo (min)</label>
+        <input
+          type="number"
+          value={tiempo}
+          onChange={(e) => setTiempo(e.target.value)}
+          className="w-full border border-gray-200 rounded-lg p-2 focus:ring-2 focus:ring-[#8B5CF6]"
+        />
+      </div>
 
-  <input
-    type="number"
-    value={tiempo}
-    onChange={(e) => setTiempo(e.target.value)}
-    placeholder="Tiempo de preparación (min)"
-    className="w-full border rounded-md p-2"
-  />
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Instrucciones</label>
+        <textarea
+          value={instrucciones}
+          onChange={(e) => setInstrucciones(e.target.value)}
+          rows="4"
+          className="w-full border border-gray-200 rounded-lg p-2 focus:ring-2 focus:ring-[#8B5CF6]"
+        />
+      </div>
 
-  <textarea
-    value={instrucciones}
-    onChange={(e) => setInstrucciones(e.target.value)}
-    placeholder="Instrucciones"
-    className="w-full border rounded-md p-2"
-  />
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Imagen</label>
+        {imagenExistente && !imagen && (
+          <img
+            src={imagenExistente}
+            alt="Vista previa"
+            className="w-32 h-32 object-cover rounded-lg border border-gray-200 mb-2"
+          />
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setImagen(e.target.files[0])}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-[#8B5CF6]/10 file:text-[#8B5CF6] hover:file:bg-[#8B5CF6]/20 cursor-pointer"
+        />
+      </div>
 
-  <input
-    type="file"
-    accept="image/*"
-    onChange={(e) => setImagen(e.target.files[0])}
-    className="w-full border rounded-md p-2"
-  />
-
-  {imagenExistente && (
-    <img
-      src={imagenExistente}
-      alt="Previsualización"
-      className="w-32 h-32 object-cover rounded-md"
-    />
-  )}
-
-  <button
-    type="submit"
-    disabled={subiendo}
-    className="bg-[#8B5CF6] text-white px-4 py-2 rounded-md hover:bg-[#7C3AED]"
-  >
-    {subiendo ? "Guardando..." : modo === "editar" ? "Actualizar" : "Guardar"}
-  </button>
-</div>
-
-
+      <button
+        type="submit"
+        disabled={subiendo}
+        className={`w-full py-3 rounded-xl font-medium transition text-white ${
+          subiendo
+            ? "bg-[#A8BDA8]/60 cursor-not-allowed"
+            : "bg-[#8B5CF6] hover:bg-[#7C3AED]"
+        }`}
+      >
+        {subiendo
+          ? "Guardando..."
+          : modo === "editar"
+          ? "Guardar cambios"
+          : "Guardar receta"}
+      </button>
     </form>
   );
 }
