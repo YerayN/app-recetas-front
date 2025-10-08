@@ -44,19 +44,33 @@ function AppContent() {
     }
   };
 
-  useEffect(() => {
-    getCsrfToken();
-    fetchRecetas();
-  }, [usuario]);
+// 🔹 Inicialización segura: obtener CSRF y cargar recetas si hay sesión
+useEffect(() => {
+  const init = async () => {
+    // 1️⃣ Obtener token CSRF y asegurar que las cookies se establecen
+    await getCsrfToken();
 
-  // 🔹 Redirección automática según sesión
-  useEffect(() => {
-    if (usuario && (pathname === "/login" || pathname === "/registro")) {
-      navigate("/"); // si ya estás logueado, ve al home
-    } else if (!usuario && pathname !== "/login" && pathname !== "/registro") {
-      navigate("/login"); // si no estás logueado, ve al login
+    // 2️⃣ Solo después, si el usuario está logueado, cargar sus recetas
+    if (usuario) {
+      await fetchRecetas();
     }
-  }, [usuario, pathname, navigate]);
+  };
+
+  init();
+}, [usuario]);
+
+// 🔹 Redirección automática según sesión
+useEffect(() => {
+  // Evita redirección prematura antes de cargar CSRF
+  if (usuario === null) return; // Espera a que AuthContext determine sesión
+
+  if (usuario && (pathname === "/login" || pathname === "/registro")) {
+    navigate("/"); // ya logueado → home
+  } else if (!usuario && pathname !== "/login" && pathname !== "/registro") {
+    navigate("/login"); // no logueado → login
+  }
+}, [usuario, pathname, navigate]);
+
 
   const isProtected = usuario;
 
