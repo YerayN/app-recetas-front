@@ -11,17 +11,9 @@ let csrfToken = null;
 
 /**
  * Obtiene el token CSRF del backend.
- * El backend establece la cookie y nosotros la leemos.
+ * Ahora el backend lo devuelve en el response body Y en el header.
  */
 export async function getCsrfToken() {
-  // Si ya tenemos el token en memoria, intentar leerlo de la cookie por si cambió
-  const cookieMatch = document.cookie.match(/csrftoken=([^;]+)/);
-  if (cookieMatch) {
-    csrfToken = cookieMatch[1];
-    return csrfToken;
-  }
-
-  // Si no está en la cookie, pedirlo al backend
   try {
     const cleanApiUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
     const csrfUrl = `${cleanApiUrl}/auth/csrf-cookie/`;
@@ -32,21 +24,27 @@ export async function getCsrfToken() {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to get CSRF cookie");
+      throw new Error("Failed to get CSRF token");
     }
 
-    // Esperar un poco para que la cookie se establezca
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Leer el token del header X-CSRFToken
+    const tokenFromHeader = response.headers.get('X-CSRFToken');
+    
+    if (tokenFromHeader) {
+      csrfToken = tokenFromHeader;
+      console.log("✅ CSRF Token obtenido del header");
+      return csrfToken;
+    }
 
-    // Leer el token de las cookies del navegador
-    const newCookieMatch = document.cookie.match(/csrftoken=([^;]+)/);
-    if (newCookieMatch) {
-      csrfToken = newCookieMatch[1];
-      console.log("✅ CSRF Token obtenido y guardado");
+    // Si no está en el header, intentar del body
+    const data = await response.json();
+    if (data.csrfToken) {
+      csrfToken = data.csrfToken;
+      console.log("✅ CSRF Token obtenido del body");
       return csrfToken;
     }
     
-    throw new Error("CSRF token not found in cookies after request");
+    throw new Error("CSRF token not found in response");
 
   } catch (error) {
     console.error("❌ Error al obtener CSRF token:", error);
@@ -77,14 +75,14 @@ export async function apiFetch(endpoint, options = {}) {
   
   // Añadir token CSRF para mutaciones
   if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-    if (!csrfToken) {
-      await getCsrfToken();
-    }
+    // Siempre intentar obtener el token actualizado
+    const token = await getCsrfToken();
     
-    if (csrfToken) {
-      headers["X-CSRFToken"] = csrfToken;
+    if (token) {
+      headers["X-CSRFToken"] = token;
+      console.log(`🔐 Token CSRF añadido para ${method} ${endpoint}`);
     } else {
-      console.warn("⚠️ No se pudo obtener el token CSRF");
+      console.warn(`⚠️ No se pudo obtener token CSRF para ${method} ${endpoint}`);
     }
   }
 
@@ -100,6 +98,15 @@ export async function apiFetch(endpoint, options = {}) {
     credentials: "include",
     headers,
   });
+  
+  // Si el login fue exitoso, capturar el token del header
+  if (endpoint === "login/" && response.ok) {
+    const tokenFromHeader = response.headers.get('X-CSRFToken');
+    if (tokenFromHeader) {
+      csrfToken = tokenFromHeader;
+      console.log("✅ CSRF Token actualizado después del login");
+    }
+  }
   
   // Manejar respuesta
   if (!response.ok) {
@@ -117,6 +124,7 @@ export async function apiFetch(endpoint, options = {}) {
 
   // Para DELETE normalmente no hay contenido
   if (response.status === 204) {
+    console.log(`✅ ${method} exitoso: ${endpoint}`);
     return true;
   }
 

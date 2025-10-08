@@ -32,10 +32,8 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     try {
-      // El token CSRF ya debería estar obtenido por el useEffect inicial
-      // pero lo refrescamos por si acaso
-      await getCsrfToken();
-      
+      // apiFetch manejará automáticamente el token CSRF
+      // y lo actualizará después del login exitoso
       await apiFetch("login/", {
         method: "POST",
         body: JSON.stringify({ username, password }),
