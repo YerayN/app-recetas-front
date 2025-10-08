@@ -37,6 +37,7 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
     try {
       let imageUrl = imagenExistente;
 
+      // 🔹 Subida a Cloudinary (solo si se selecciona una nueva imagen)
       if (imagen) {
         const data = new FormData();
         data.append("file", imagen);
@@ -55,24 +56,31 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
         }
       }
 
-      const formData = new FormData();
-      formData.append("nombre", nombre);
-      formData.append("descripcion", descripcion);
-      formData.append("tiempo_preparacion", tiempo);
-      formData.append("instrucciones", instrucciones);
-      formData.append("imagen", imageUrl);
+      // 🔹 Ahora enviamos JSON al backend (no FormData)
+      const nuevaReceta = {
+        nombre,
+        descripcion,
+        tiempo_preparacion: tiempo,
+        instrucciones,
+        imagen: imageUrl,
+      };
 
       if (modo === "editar") {
-        await apiFetch(`recetas/${id}/`, { method: "PUT", body: formData });
+        await apiFetch(`recetas/${id}/`, {
+          method: "PUT",
+          body: JSON.stringify(nuevaReceta),
+        });
         setMensaje("✅ Receta actualizada correctamente");
-        if (onUpdate) onUpdate();
-        setTimeout(() => navigate("/recetas"), 1000);
       } else {
-        await apiFetch("recetas/", { method: "POST", body: formData });
+        await apiFetch("recetas/", {
+          method: "POST",
+          body: JSON.stringify(nuevaReceta),
+        });
         setMensaje("✅ Receta creada correctamente");
-        if (onUpdate) onUpdate();
-        setTimeout(() => navigate("/recetas"), 1000);
       }
+
+      if (onUpdate) onUpdate();
+      setTimeout(() => navigate("/recetas"), 1000);
     } catch (error) {
       console.error(error);
       setMensaje("❌ Error al guardar la receta");
