@@ -14,8 +14,14 @@ let csrfToken = null;
  * El backend establece la cookie y nosotros la leemos.
  */
 export async function getCsrfToken() {
-  if (csrfToken) return csrfToken;
+  // Si ya tenemos el token en memoria, intentar leerlo de la cookie por si cambió
+  const cookieMatch = document.cookie.match(/csrftoken=([^;]+)/);
+  if (cookieMatch) {
+    csrfToken = cookieMatch[1];
+    return csrfToken;
+  }
 
+  // Si no está en la cookie, pedirlo al backend
   try {
     const cleanApiUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
     const csrfUrl = `${cleanApiUrl}/auth/csrf-cookie/`;
@@ -29,15 +35,18 @@ export async function getCsrfToken() {
       throw new Error("Failed to get CSRF cookie");
     }
 
+    // Esperar un poco para que la cookie se establezca
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Leer el token de las cookies del navegador
-    const cookieMatch = document.cookie.match(/csrftoken=([^;]+)/);
-    if (cookieMatch) {
-      csrfToken = cookieMatch[1];
-      console.log("✅ CSRF Token obtenido");
+    const newCookieMatch = document.cookie.match(/csrftoken=([^;]+)/);
+    if (newCookieMatch) {
+      csrfToken = newCookieMatch[1];
+      console.log("✅ CSRF Token obtenido y guardado");
       return csrfToken;
     }
     
-    throw new Error("CSRF token not found in cookies");
+    throw new Error("CSRF token not found in cookies after request");
 
   } catch (error) {
     console.error("❌ Error al obtener CSRF token:", error);

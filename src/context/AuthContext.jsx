@@ -1,39 +1,69 @@
 import { createContext, useState, useEffect } from "react";
-import { apiFetch } from "../services/api";
+import { apiFetch, getCsrfToken } from "../services/api";
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Intenta verificar la sesión (requiere SessionAuthentication en settings.py)
-    apiFetch("recetas/")
-      .then(() => setUsuario({ logged: true }))
-      .catch(() => setUsuario(null));
+    // Al iniciar la app:
+    // 1. Obtener el token CSRF primero
+    // 2. Verificar si hay sesión activa
+    const initAuth = async () => {
+      try {
+        // Paso 1: Obtener token CSRF
+        await getCsrfToken();
+        
+        // Paso 2: Verificar sesión (requiere SessionAuthentication)
+        await apiFetch("recetas/");
+        setUsuario({ logged: true });
+      } catch (error) {
+        console.log("No hay sesión activa");
+        setUsuario(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
   }, []);
 
-const login = async (username, password) => {
-  try {
-    await apiFetch("login/", {
-      method: "POST",
-      body: JSON.stringify({ username, password }),
-    });
-    
-    setUsuario({ logged: true, username });
-    return true;
-  } catch (error) {
-    console.error("❌ Error en login:", error);
-    return false;
-  }
-};
-
+  const login = async (username, password) => {
+    try {
+      // El token CSRF ya debería estar obtenido por el useEffect inicial
+      // pero lo refrescamos por si acaso
+      await getCsrfToken();
+      
+      await apiFetch("login/", {
+        method: "POST",
+        body: JSON.stringify({ username, password }),
+      });
+      
+      setUsuario({ logged: true, username });
+      return true;
+    } catch (error) {
+      console.error("Error en login:", error);
+      return false;
+    }
+  };
 
   const logout = async () => {
-    // La petición POST de logout también requiere el token CSRF
-    await apiFetch("logout/", { method: "POST" });
-    setUsuario(null);
+    try {
+      await apiFetch("logout/", { method: "POST" });
+      setUsuario(null);
+    } catch (error) {
+      console.error("Error en logout:", error);
+      // Aunque falle, limpiamos la sesión local
+      setUsuario(null);
+    }
   };
+
+  // Mostrar loading mientras verificamos la sesión
+  if (loading) {
+    return <div>Cargando...</div>;
+  }
 
   return (
     <AuthContext.Provider value={{ usuario, login, logout }}>
