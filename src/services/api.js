@@ -7,10 +7,9 @@ export async function apiFetch(endpoint, options = {}) {
   const cleanUrl = `${API_URL.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`;
   const response = await fetch(cleanUrl, {
     ...options,
-    credentials: "include",
+    credentials: "include", // 👈 permite enviar/recibir cookies de sesión
   });
 
-  // Si la respuesta no es JSON o hay error, manejarlo
   let data = null;
   try {
     data = await response.json();
@@ -25,6 +24,7 @@ export async function apiFetch(endpoint, options = {}) {
 
   return data;
 }
+
 
 
 /* ===============================
