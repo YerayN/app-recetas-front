@@ -235,7 +235,7 @@ function AppContent() {
                 } transition-colors`}
               />
               {isActive(to) && (
-                <span className="absolute bottom-1.5 w-1.5 h-1.5 bg-[#8B5CF6] rounded-full mt-1 transition-transform duration-300 scale-100"></span>
+                <span className="absolute -bottom-2 w-1.5 h-1.5 bg-[#8B5CF6] rounded-full mt-1 transition-transform duration-300 scale-100"></span>
               )}
             </Link>
           ))}
