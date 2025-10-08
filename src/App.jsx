@@ -77,6 +77,7 @@ useEffect(() => {
   }
 }, [usuario, pathname, navigate, authLoaded]);
 
+const isProtected = usuario;
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] pb-20 md:pb-0">
