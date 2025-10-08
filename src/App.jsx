@@ -55,20 +55,18 @@ function AppContent() {
   const isAuthPage = pathname.includes("/login") || pathname.includes("/registro");
   const isProtected = !isAuthPage && usuario;
 
-  // Función para detectar ruta activa en móvil
-  const isActive = (path) =>
-    pathname === path ? "text-[#8B5CF6]" : "text-gray-500";
+  const isActive = (path) => pathname === path;
 
   return (
-    <div className="min-h-screen bg-[#FAF8F6] pb-16 md:pb-0">
-      {/* --- Header (solo en escritorio) --- */}
+    <div className="min-h-screen bg-[#FAF8F6] pb-20 md:pb-0">
+      {/* --- Header (solo escritorio) --- */}
       <header className="hidden md:block bg-white shadow-sm">
-        <nav className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
+        <nav className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <Link to="/" className="text-xl font-bold text-[#8B5CF6]">
             RecetasApp
           </Link>
           {isProtected && (
-            <div className="flex space-x-6 text-sm font-medium text-gray-600">
+            <div className="flex space-x-8 text-[15px] font-medium text-gray-600">
               <Link
                 to="/"
                 className={`hover:text-[#8B5CF6] transition ${
@@ -216,34 +214,31 @@ function AppContent() {
 
       {/* --- Bottom Nav (solo móvil) --- */}
       {isProtected && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md flex justify-around py-2 z-50">
-          <Link to="/" className={`flex flex-col items-center ${isActive("/")}`}>
-            <HomeIcon className="h-6 w-6" />
-          </Link>
-          <Link
-            to="/recetas"
-            className={`flex flex-col items-center ${isActive("/recetas")}`}
-          >
-            <BookOpenIcon className="h-6 w-6" />
-          </Link>
-          <Link
-            to="/recetas/nueva"
-            className={`flex flex-col items-center ${isActive("/recetas/nueva")}`}
-          >
-            <PlusCircleIcon className="h-7 w-7" />
-          </Link>
-          <Link
-            to="/plan-semanal"
-            className={`flex flex-col items-center ${isActive("/plan-semanal")}`}
-          >
-            <CalendarIcon className="h-6 w-6" />
-          </Link>
-          <Link
-            to="/lista-compra"
-            className={`flex flex-col items-center ${isActive("/lista-compra")}`}
-          >
-            <ShoppingCartIcon className="h-6 w-6" />
-          </Link>
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md flex justify-around items-center py-3 z-50">
+          {[
+            { to: "/", icon: HomeIcon },
+            { to: "/recetas", icon: BookOpenIcon },
+            { to: "/recetas/nueva", icon: PlusCircleIcon },
+            { to: "/plan-semanal", icon: CalendarIcon },
+            { to: "/lista-compra", icon: ShoppingCartIcon },
+          ].map(({ to, icon: Icon }, i) => (
+            <Link
+              key={i}
+              to={to}
+              className={`flex flex-col items-center relative ${
+                isActive(to) ? "text-[#8B5CF6]" : "text-gray-500"
+              }`}
+            >
+              <Icon
+                className={`${
+                  to === "/recetas/nueva" ? "h-9 w-9" : "h-7 w-7"
+                } transition-colors`}
+              />
+              {isActive(to) && (
+                <span className="absolute bottom-0 w-1.5 h-1.5 bg-[#8B5CF6] rounded-full mt-1 transition-transform duration-300 scale-100"></span>
+              )}
+            </Link>
+          ))}
         </nav>
       )}
     </div>
