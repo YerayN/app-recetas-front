@@ -26,7 +26,8 @@ import {
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 
-import { apiFetch } from "./services/api";
+// ✅ Importar la nueva función para obtener el token CSRF
+import { apiFetch, getCsrfToken } from "./services/api";
 
 function AppContent() {
   const [recetas, setRecetas] = useState([]);
@@ -37,6 +38,7 @@ function AppContent() {
   // 🔹 Cargar recetas desde el backend
   const fetchRecetas = async () => {
     try {
+      // Esta llamada GET debería funcionar ahora gracias a SessionAuthentication en settings.py
       const data = await apiFetch("recetas/");
       setRecetas(data);
     } catch (error) {
@@ -44,85 +46,82 @@ function AppContent() {
     }
   };
 
-  useEffect(() => {
+  const handleCreate = () => {
+    // Después de crear, solo recargamos la lista
     fetchRecetas();
-  }, []);
-
-  // 🔹 Crear receta
-  const handleCreate = async (formData) => {
-    try {
-      await apiFetch("recetas/", { method: "POST", body: formData });
-      await fetchRecetas();
-      navigate("/recetas");
-    } catch (error) {
-      console.error("Error al crear receta:", error);
-      alert("❌ Error de conexión con el servidor");
-    }
   };
 
+  // 💡 Llamada para inicializar la obtención del CSRF Token
+  useEffect(() => {
+    // 1. Obtener el token CSRF tan pronto como la aplicación cargue
+    getCsrfToken();
+    
+    // 2. Cargar las recetas (se ejecutará al inicio y después del login)
+    fetchRecetas();
+
+  }, [usuario]); // Esto asegura que la autenticación y la carga inicial sucedan al montar/después del login
+
+
+  // ... (resto de tu componente AppContent sin cambios)
+  const isAuthPage = pathname.includes("/login") || pathname.includes("/registro");
+  const isProtected = !isAuthPage && usuario;
+
   return (
-    <div className="min-h-screen bg-[#FAF8F6] text-gray-800 flex flex-col font-['Inter'] pb-20 md:pb-0">
-      <header className="w-full border-b border-gray-200 bg-[#FAF8F6]/70 backdrop-blur-md sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-[#8B5CF6]">
-            <Link to="/">Recetas App</Link>
-          </h1>
-
-          <nav className="hidden md:flex gap-6 text-sm font-medium items-center">
-            {usuario?.logged ? (
-              <>
-                <Link to="/" className="hover:text-[#8B5CF6] transition-colors">
-                  Inicio
-                </Link>
-                <Link to="/recetas" className="hover:text-[#8B5CF6] transition-colors">
-                  Mis recetas
-                </Link>
-                <Link to="/recetas/nueva" className="hover:text-[#8B5CF6] transition-colors">
-                  Nueva receta
-                </Link>
-                <Link to="/plan-semanal" className="hover:text-[#8B5CF6] transition-colors">
-                  Plan semanal
-                </Link>
-                <Link to="/lista" className="hover:text-[#8B5CF6] transition-colors">
-                  Lista
-                </Link>
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-1 text-gray-600 hover:text-red-500 transition"
-                  title="Cerrar sesión"
-                >
-                  <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="hover:text-[#8B5CF6]">
-                  Iniciar sesión
-                </Link>
-                <Link to="/registro" className="hover:text-[#8B5CF6]">
-                  Registrarse
-                </Link>
-              </>
-            )}
-          </nav>
-        </div>
+    <div className="min-h-screen bg-[#FAF8F6]">
+      <header className="bg-white shadow-sm">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+          <Link to="/" className="text-xl font-bold text-[#8B5CF6]">
+            RecetasApp
+          </Link>
+          {isProtected && (
+            <div className="flex space-x-4">
+              <Link to="/plan-semanal" className="text-gray-600 hover:text-[#8B5CF6] transition">
+                <CalendarIcon className="h-6 w-6" />
+              </Link>
+              <Link to="/recetas" className="text-gray-600 hover:text-[#8B5CF6] transition">
+                <BookOpenIcon className="h-6 w-6" />
+              </Link>
+              <Link to="/recetas/nueva" className="text-gray-600 hover:text-[#8B5CF6] transition">
+                <PlusCircleIcon className="h-6 w-6" />
+              </Link>
+              {/* <Link to="/lista-compra" className="text-gray-600 hover:text-[#8B5CF6] transition">
+                <ShoppingCartIcon className="h-6 w-6" />
+              </Link> */}
+              <button
+                onClick={() => {
+                  logout();
+                  navigate("/login");
+                }}
+                className="text-gray-600 hover:text-red-500 transition"
+              >
+                <ArrowRightOnRectangleIcon className="h-6 w-6" />
+              </button>
+            </div>
+          )}
+          {!usuario && !isAuthPage && (
+            <Link
+              to="/login"
+              className="px-4 py-2 rounded-lg bg-[#8B5CF6] text-white text-sm font-medium hover:bg-[#7C3AED] transition"
+            >
+              Iniciar Sesión
+            </Link>
+          )}
+        </nav>
       </header>
-
-      <main className="flex-grow">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
-
           <Route
             path="/"
             element={
               <ProtectedRoute>
-                <section className="text-center mt-12 px-6">
-                  <h2 className="text-3xl md:text-4xl font-semibold mb-3 text-gray-800">
-                    Tu cocina, organizada a tu ritmo 🍃
-                  </h2>
-                  <p className="text-gray-500 max-w-md mx-auto">
-                    Planifica tus comidas, guarda tus recetas y genera tu lista
+                <section className="text-center py-20">
+                  <h1 className="text-4xl font-extrabold text-[#8B5CF6] mb-4">
+                    Bienvenido a RecetasApp
+                  </h1>
+                  <p className="text-lg text-gray-600">
+                    Tu gestor de recetas y planificador semanal. Organiza tus recetas y genera tu lista
                     de la compra en un solo lugar.
                   </p>
                 </section>
