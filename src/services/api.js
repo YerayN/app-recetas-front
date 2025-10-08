@@ -1,207 +1,204 @@
 // src/services/api.js
 
 export const API_URL =
-  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/";
+  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
 
-// 1. Variable para almacenar el token CSRF
+// ================================================
+// 🔐 MANEJO DE TOKEN CSRF
+// ================================================
+
 let csrfToken = null;
 
-// 2. Función para obtener el token. La petición establece la cookie.
+/**
+ * Obtiene el token CSRF del backend.
+ * El backend establece la cookie y nosotros la leemos.
+ */
 export async function getCsrfToken() {
-  if (csrfToken) return csrfToken; // Retorna si ya lo tenemos
+  if (csrfToken) return csrfToken;
 
   try {
-    // ✅ Lógica de URL simplificada para obtener la URL base limpia
     const cleanApiUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
     const csrfUrl = `${cleanApiUrl}/auth/csrf-cookie/`;
 
-    // Petición GET al endpoint que Django usa para establecer la cookie
     const response = await fetch(csrfUrl, {
       method: 'GET',
-      credentials: "include", // Crucial para recibir la cookie
+      credentials: "include",
     });
 
     if (!response.ok) {
-        throw new Error("Failed to set CSRF cookie");
+      throw new Error("Failed to get CSRF cookie");
     }
 
-    // Leemos el valor de 'csrftoken' de las cookies del documento
+    // Leer el token de las cookies del navegador
     const cookieMatch = document.cookie.match(/csrftoken=([^;]+)/);
     if (cookieMatch) {
       csrfToken = cookieMatch[1];
-      console.log("✅ CSRF Token obtenido y almacenado.");
+      console.log("✅ CSRF Token obtenido");
       return csrfToken;
     }
     
-    throw new Error("CSRF token not found in cookies"); 
+    throw new Error("CSRF token not found in cookies");
 
   } catch (error) {
-    console.error("❌ Error al obtener el token CSRF:", error);
-    return null; 
+    console.error("❌ Error al obtener CSRF token:", error);
+    return null;
   }
 }
 
-// 3. Función de fetch que inyecta el token para mutaciones
+// ================================================
+// 🌐 FUNCIÓN FETCH PRINCIPAL
+// ================================================
+
+/**
+ * Función fetch mejorada que:
+ * - Construye URLs correctamente
+ * - Inyecta el token CSRF en mutaciones
+ * - Maneja credenciales y errores
+ */
 export async function apiFetch(endpoint, options = {}) {
-  // 💡 NUEVA LÓGICA DE CONSTRUCCIÓN DE URL
-  // ------------------------------------------------------------------
-  // 1. Quitar la barra final de API_URL si existe
+  // Limpiar y construir la URL
   const cleanApiUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-  // 2. Quitar la barra inicial del endpoint si existe
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-  // 3. Unir
-  const cleanUrl = `${cleanApiUrl}/${cleanEndpoint}`;
-  // ------------------------------------------------------------------
+  const url = `${cleanApiUrl}/${cleanEndpoint}`;
   
   const method = options.method ? options.method.toUpperCase() : "GET";
   
-  const headers = options.headers || {};
+  // Preparar headers
+  let headers = { ...options.headers };
   
-  // 💡 Solo necesitamos el token para métodos que modifican el servidor (mutaciones)
+  // Añadir token CSRF para mutaciones
   if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-    // Si no tenemos el token, intentamos obtenerlo de forma síncrona
     if (!csrfToken) {
-        await getCsrfToken(); 
+      await getCsrfToken();
     }
     
-    // Si el token fue encontrado, lo añadimos al header
     if (csrfToken) {
-        // Django/DRF espera el token en el encabezado X-CSRFToken
-        headers["X-CSRFToken"] = csrfToken; 
+      headers["X-CSRFToken"] = csrfToken;
     } else {
-        console.warn("⚠️ CSRF token is missing. POST/PUT/DELETE requests may fail.");
+      console.warn("⚠️ No se pudo obtener el token CSRF");
     }
   }
 
-  const response = await fetch(cleanUrl, {
+  // Añadir Content-Type solo si no está ya definido
+  if (!headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  // Realizar la petición
+  const response = await fetch(url, {
     ...options,
-    credentials: "include", // Crucial para enviar la cookie de sesión/CSRF
-    headers: {
-        ...headers,
-        "Content-Type": headers["Content-Type"] || "application/json",
-    },
+    method,
+    credentials: "include",
+    headers,
   });
   
-  let data = null;
-  // Intenta parsear la respuesta como JSON
-  try {
-    // Si es DELETE (status 204), no hay JSON que devolver
-    if (response.status !== 204) {
-      data = await response.json();
+  // Manejar respuesta
+  if (!response.ok) {
+    let errorData = null;
+    try {
+      errorData = await response.json();
+    } catch {
+      // No hay JSON en la respuesta
     }
+    
+    const errorMessage = errorData?.detail || errorData?.error || `Error ${response.status}`;
+    console.error(`❌ Error ${response.status} en ${url}:`, errorMessage);
+    throw new Error(errorMessage);
+  }
+
+  // Para DELETE normalmente no hay contenido
+  if (response.status === 204) {
+    return true;
+  }
+
+  // Parsear JSON
+  try {
+    return await response.json();
   } catch {
-    data = null;
+    return null;
   }
-
-  if (!response.ok) {
-    console.error(`❌ Error ${response.status} en ${cleanUrl}`, data);
-    // Aseguramos que el error es descriptivo
-    throw new Error(data?.detail || data?.error || `Error ${response.status} en la petición`);
-  }
-  
-  // Si fue un 204 (DELETE), devolvemos true
-  if (response.status === 204) return true;
-
-  return data;
 }
 
-// Nota: Asegúrate de incluir aquí tus funciones helper como 'handleResponse' 
-// y 'extractResults' si las usas en otras partes de tu archivo 'api.js' 
-// (aunque no fueron incluidas en el snippet proporcionado).
+// ================================================
+// 📦 FUNCIONES DE RECETAS
+// ================================================
 
-
-
-/* ===============================
-   📘  Helpers
-=============================== */
-async function handleResponse(response, errorMessage) {
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`${errorMessage}: ${text || response.status}`);
-  }
-  // Si es DELETE, no hay JSON que devolver
-  if (response.status === 204) return true;
-  return await response.json();
-}
-
-function extractResults(data) {
-  // DRF puede devolver lista directa o paginada
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.results)) return data.results;
-  return [];
-}
-
-/* ===============================
-   📦  Recetas
-=============================== */
 export async function getRecetas() {
-  const response = await fetch(`${API_URL}/recetas/`);
-  return await handleResponse(response, "Error al obtener las recetas");
+  return await apiFetch("recetas/");
 }
 
 export async function createReceta(data) {
-  const response = await fetch(`${API_URL}/recetas/`, {
+  return await apiFetch("recetas/", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return await handleResponse(response, "Error al crear la receta");
 }
 
 export async function updateReceta(id, data) {
-  const response = await fetch(`${API_URL}/recetas/${id}/`, {
+  return await apiFetch(`recetas/${id}/`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return await handleResponse(response, "Error al actualizar la receta");
 }
 
 export async function deleteReceta(id) {
-  const response = await fetch(`${API_URL}/recetas/${id}/`, {
+  return await apiFetch(`recetas/${id}/`, {
     method: "DELETE",
   });
-  return await handleResponse(response, "Error al eliminar la receta");
 }
 
-/* ===============================
-   🧂  Ingredientes
-=============================== */
+// ================================================
+// 🧂 FUNCIONES DE INGREDIENTES
+// ================================================
+
 export async function getIngredientes(search = "") {
-  const url = search
-    ? `${API_URL}/ingredientes/?search=${encodeURIComponent(search)}`
-    : `${API_URL}/ingredientes/`;
-  const response = await fetch(url);
-  const data = await handleResponse(response, "Error al obtener los ingredientes");
+  const endpoint = search 
+    ? `ingredientes/?search=${encodeURIComponent(search)}`
+    : "ingredientes/";
+  
+  const data = await apiFetch(endpoint);
   return extractResults(data);
 }
 
-/* ===============================
-   ⚖️  Unidades
-=============================== */
+export async function fetchIngredientes(search = "") {
+  return await getIngredientes(search);
+}
+
+// ================================================
+// ⚖️ FUNCIONES DE UNIDADES
+// ================================================
+
 export async function getUnidades() {
-  const response = await fetch(`${API_URL}/unidades/`);
-  const data = await handleResponse(response, "Error al obtener las unidades");
-  return extractResults(data).map((u) => ({
+  const data = await apiFetch("unidades/");
+  const results = extractResults(data);
+  
+  return results.map((u) => ({
     id: u.id,
     nombre: u.nombre ?? u.name ?? "",
     abreviatura: u.abreviatura ?? u.abbrev ?? "",
   }));
 }
 
-/* ===============================
-   🧩  Ingrediente-Receta (opcional)
-=============================== */
-// Si más adelante deseas manejar esta tabla directamente:
+// ================================================
+// 🧩 FUNCIONES DE INGREDIENTES-RECETA
+// ================================================
+
 export async function getIngredientesReceta(recetaId) {
-  const response = await fetch(`${API_URL}/ingredientesreceta/?receta=${recetaId}`);
-  const data = await handleResponse(response, "Error al obtener los ingredientes de la receta");
+  const data = await apiFetch(`ingredientesreceta/?receta=${recetaId}`);
   return extractResults(data);
 }
 
+// ================================================
+// 🛠️ HELPERS
+// ================================================
 
-export async function fetchIngredientes(search = "") {
-  const response = await fetch(`${API_URL}/ingredientes/?search=${search}`);
-  if (!response.ok) throw new Error("Error al obtener ingredientes");
-  return await response.json();
+/**
+ * Extrae resultados de una respuesta que puede ser:
+ * - Un array directo
+ * - Un objeto con paginación { results: [...] }
+ */
+function extractResults(data) {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.results)) return data.results;
+  return [];
 }

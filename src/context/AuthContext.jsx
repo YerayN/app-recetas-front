@@ -13,24 +13,20 @@ export function AuthProvider({ children }) {
       .catch(() => setUsuario(null));
   }, []);
 
-  const login = async (username, password) => {
-    try {
-      await apiFetch("login/", {
-        method: "POST",
-        // ✅ ELIMINAR O SIMPLIFICAR EL OBJETO HEADERS
-        // NO LO PASES si solo quieres Content-Type, ya que apiFetch lo añade por defecto
-        // y necesitamos que apiFetch maneje el header X-CSRFToken.
-        // headers: { "Content-Type": "application/json" }, ❌ ELIMINAR ESTO
-        body: JSON.stringify({ username, password }),
-      });
-      
-      // Si el login fue exitoso, el servidor ha devuelto la cookie de sesión
-      setUsuario({ logged: true, username });
-      return true;
-    } catch {
-      return false;
-    }
-  };
+const login = async (username, password) => {
+  try {
+    await apiFetch("login/", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
+    
+    setUsuario({ logged: true, username });
+    return true;
+  } catch (error) {
+    console.error("❌ Error en login:", error);
+    return false;
+  }
+};
 
 
   const logout = async () => {
