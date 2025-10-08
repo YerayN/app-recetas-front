@@ -35,12 +35,12 @@ export function AuthProvider({ children }) {
     initAuth();
   }, []);
 
-  const login = async (username, password) => {
+const login = async (username, password) => {
   try {
-    // 1️⃣ Renovar token CSRF antes del login
+    // 1️⃣ Forzar renovación del token CSRF antes del login
     await getCsrfToken(true);
 
-    // 2️⃣ Hacer login
+    // 2️⃣ Hacer login (esto crea la cookie sessionid)
     const res = await apiFetch("login/", {
       method: "POST",
       body: JSON.stringify({ username, password }),
@@ -48,23 +48,39 @@ export function AuthProvider({ children }) {
 
     if (!res) throw new Error("Error en login");
 
-    // 3️⃣ Esperar hasta que la cookie de sesión esté visible (máx. 2 seg)
+    console.log("✅ Login correcto, esperando a que el navegador asocie la cookie...");
+
+    // 3️⃣ Esperar hasta que el navegador "active" la cookie de sesión
     let tries = 0;
-    while (tries < 20 && !document.cookie.includes("sessionid")) {
-      await new Promise((r) => setTimeout(r, 100));
+    while (tries < 30) {
+      const cookies = document.cookie;
+      if (cookies.includes("sessionid")) break;
+      await new Promise((r) => setTimeout(r, 100)); // 3s máximo
       tries++;
     }
 
-    // 4️⃣ Volver a pedir el token CSRF (nuevo asociado a la sesión)
+    // 4️⃣ Pedir un nuevo CSRF (asociado ya a la sesión)
     await getCsrfToken(true);
 
-    setUsuario({ logged: true, username });
-    return true;
+    // 5️⃣ Verificar sesión con un endpoint simple (por ejemplo /api/recetas/)
+    try {
+      await apiFetch("recetas/");
+      console.log("🔐 Sesión confirmada tras login");
+      setUsuario({ logged: true, username });
+      return true;
+    } catch (err) {
+      console.warn("⚠️ Cookie creada pero aún no aceptada, reintentando...");
+      await new Promise((r) => setTimeout(r, 500));
+      await apiFetch("recetas/"); // segundo intento
+      setUsuario({ logged: true, username });
+      return true;
+    }
   } catch (error) {
-    console.error("Error en login:", error);
+    console.error("❌ Error en login:", error);
     return false;
   }
 };
+
 
 
   const logout = async () => {
