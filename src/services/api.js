@@ -2,7 +2,7 @@
 // -------------------------------------------------------------
 // 🌍 Configuración base de la API
 // -------------------------------------------------------------
-const BASE_URL = "https://api.ladespensa.vercel.app/api/";
+const BASE_URL = "https://app-recetas-production.up.railway.app/api/";
 
 // -------------------------------------------------------------
 // 🔐 Manejo de cookies y CSRF
