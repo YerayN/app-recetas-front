@@ -8,17 +8,22 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Al iniciar la app:
+    // 🔹 Al iniciar la app:
     // 1. Obtener el token CSRF primero
-    // 2. Verificar si hay sesión activa
+    // 2. Esperar confirmación antes de verificar sesión
     const initAuth = async () => {
       try {
-        // Paso 1: Obtener token CSRF
+        // 1️⃣ Obtener token CSRF y esperar a que se guarde la cookie
         await getCsrfToken();
-        
-        // Paso 2: Verificar sesión (requiere SessionAuthentication)
-        await apiFetch("recetas/");
-        setUsuario({ logged: true });
+        await new Promise((r) => setTimeout(r, 200)); // pequeña pausa para asegurar cookie
+
+        // 2️⃣ Verificar sesión (requiere SessionAuthentication)
+        const data = await apiFetch("recetas/");
+        if (data) {
+          setUsuario({ logged: true });
+        } else {
+          setUsuario(null);
+        }
       } catch (error) {
         console.log("No hay sesión activa");
         setUsuario(null);
@@ -32,13 +37,14 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     try {
-      // apiFetch manejará automáticamente el token CSRF
-      // y lo actualizará después del login exitoso
+      // 1️⃣ Siempre renovar token CSRF antes del login
+      await getCsrfToken(true);
+
       await apiFetch("login/", {
         method: "POST",
         body: JSON.stringify({ username, password }),
       });
-      
+
       setUsuario({ logged: true, username });
       return true;
     } catch (error) {
@@ -53,14 +59,17 @@ export function AuthProvider({ children }) {
       setUsuario(null);
     } catch (error) {
       console.error("Error en logout:", error);
-      // Aunque falle, limpiamos la sesión local
       setUsuario(null);
     }
   };
 
-  // Mostrar loading mientras verificamos la sesión
+  // 🔹 Mostrar loading mientras se inicializa todo
   if (loading) {
-    return <div>Cargando...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Cargando sesión...
+      </div>
+    );
   }
 
   return (
