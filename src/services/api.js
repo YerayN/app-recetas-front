@@ -1,221 +1,301 @@
 // src/services/api.js
+// -------------------------------------------------------------
+// 🌍 Configuración base de la API
+// -------------------------------------------------------------
+const BASE_URL = "https://app-recetas-production.up.railway.app/api/";
 
-export const API_URL =
-  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+// -------------------------------------------------------------
+// 🔐 Manejo de cookies y CSRF
+// -------------------------------------------------------------
+let csrfTokenCache = null;
 
-// ================================================
-// 🔐 MANEJO DE TOKEN CSRF
-// ================================================
+// Obtener cookie de Django por nombre
+export function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+}
 
-let csrfToken = null;
+// -------------------------------------------------------------
+// 🔹 Obtener el token CSRF del backend
+// -------------------------------------------------------------
+export async function getCsrfToken(forceRefresh = false) {
+  if (csrfTokenCache && !forceRefresh) return csrfTokenCache;
 
-/**
- * Obtiene el token CSRF del backend.
- * Ahora el backend lo devuelve en el response body Y en el header.
- */
-export async function getCsrfToken() {
   try {
-    const cleanApiUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-    const csrfUrl = `${cleanApiUrl}/auth/csrf-cookie/`;
-
-    const response = await fetch(csrfUrl, {
-      method: 'GET',
-      credentials: "include",
+    const res = await fetch(`${BASE_URL}csrf/`, {
+      method: "GET",
+      credentials: "include", // 🔥 permite recibir cookie
     });
 
-    if (!response.ok) {
-      throw new Error("Failed to get CSRF token");
-    }
+    if (!res.ok) throw new Error("No se pudo obtener el token CSRF");
+    const data = await res.json();
 
-    // Leer el token del header X-CSRFToken
-    const tokenFromHeader = response.headers.get('X-CSRFToken');
-    
-    if (tokenFromHeader) {
-      csrfToken = tokenFromHeader;
-      console.log("✅ CSRF Token obtenido del header");
-      return csrfToken;
-    }
-
-    // Si no está en el header, intentar del body
-    const data = await response.json();
-    if (data.csrfToken) {
-      csrfToken = data.csrfToken;
-      console.log("✅ CSRF Token obtenido del body");
-      return csrfToken;
-    }
-    
-    throw new Error("CSRF token not found in response");
-
+    csrfTokenCache = data.csrfToken || getCookie("csrftoken");
+    console.log("🔐 CSRF Token obtenido del body");
+    return csrfTokenCache;
   } catch (error) {
-    console.error("❌ Error al obtener CSRF token:", error);
+    console.error("❌ Error obteniendo CSRF token:", error);
     return null;
   }
 }
 
-// ================================================
-// 🌐 FUNCIÓN FETCH PRINCIPAL
-// ================================================
-
-/**
- * Función fetch mejorada que:
- * - Construye URLs correctamente
- * - Inyecta el token CSRF en mutaciones
- * - Maneja credenciales y errores
- */
+// -------------------------------------------------------------
+// 🔹 Utilidad general para peticiones autenticadas
+// -------------------------------------------------------------
 export async function apiFetch(endpoint, options = {}) {
-  // Limpiar y construir la URL
-  const cleanApiUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-  const url = `${cleanApiUrl}/${cleanEndpoint}`;
-  
-  const method = options.method ? options.method.toUpperCase() : "GET";
-  
-  // Preparar headers
-  let headers = { ...options.headers };
-  
-  // Añadir token CSRF para mutaciones
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-    // Siempre intentar obtener el token actualizado
-    const token = await getCsrfToken();
-    
-    if (token) {
-      headers["X-CSRFToken"] = token;
-      console.log(`🔐 Token CSRF añadido para ${method} ${endpoint}`);
-    } else {
-      console.warn(`⚠️ No se pudo obtener token CSRF para ${method} ${endpoint}`);
-    }
+  const url = `${BASE_URL}${endpoint}`;
+  const method = options.method || "GET";
+
+  const headers = {
+    Accept: "application/json",
+    ...(options.headers || {}),
+  };
+
+  // Añadir token CSRF solo si no es un GET
+  if (method !== "GET" && !(options.body instanceof FormData)) {
+    const csrf = getCookie("csrftoken") || csrfTokenCache;
+    if (csrf) headers["X-CSRFToken"] = csrf;
   }
 
-  // Añadir Content-Type solo si no está ya definido
-  if (!headers["Content-Type"]) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  // Realizar la petición
-  const response = await fetch(url, {
-    ...options,
+  const opts = {
     method,
-    credentials: "include",
+    credentials: "include", // 🔥 envía sessionid + csrftoken
     headers,
-  });
-  
-  // Si el login fue exitoso, capturar el token del header
-  if (endpoint === "login/" && response.ok) {
-    const tokenFromHeader = response.headers.get('X-CSRFToken');
-    if (tokenFromHeader) {
-      csrfToken = tokenFromHeader;
-      console.log("✅ CSRF Token actualizado después del login");
+  };
+
+  // Manejar el cuerpo según tipo
+  if (options.body) {
+    if (options.body instanceof FormData) {
+      opts.body = options.body; // no añadir Content-Type
+    } else if (typeof options.body === "string") {
+      headers["Content-Type"] = "application/json";
+      opts.body = options.body;
+    } else {
+      headers["Content-Type"] = "application/json";
+      opts.body = JSON.stringify(options.body);
     }
   }
-  
-  // Manejar respuesta
-  if (!response.ok) {
-    let errorData = null;
-    try {
-      errorData = await response.json();
-    } catch {
-      // No hay JSON en la respuesta
-    }
-    
-    const errorMessage = errorData?.detail || errorData?.error || `Error ${response.status}`;
-    console.error(`❌ Error ${response.status} en ${url}:`, errorMessage);
-    throw new Error(errorMessage);
-  }
 
-  // Para DELETE normalmente no hay contenido
-  if (response.status === 204) {
-    console.log(`✅ ${method} exitoso: ${endpoint}`);
-    return true;
-  }
-
-  // Parsear JSON
   try {
-    return await response.json();
-  } catch {
-    return null;
+    const res = await fetch(url, opts);
+
+    if (!res.ok) {
+      if (res.status === 403)
+        console.warn(`🚫 403 en ${url}: Las credenciales no se proveyeron.`);
+      else if (res.status === 401)
+        console.warn(`🔒 401 en ${url}: Sesión expirada o no autorizada.`);
+      else console.error(`❌ ${res.status} ${res.statusText} en ${url}`);
+      throw new Error(`Error ${res.status} en ${endpoint}`);
+    }
+
+    if (res.status === 204) return null;
+
+    const type = res.headers.get("content-type");
+    return type && type.includes("application/json")
+      ? await res.json()
+      : await res.text();
+  } catch (err) {
+    console.error("❌ Error en apiFetch:", err);
+    throw err;
   }
 }
 
-// ================================================
-// 📦 FUNCIONES DE RECETAS
-// ================================================
+// -------------------------------------------------------------
+// 🧠 Autenticación
+// -------------------------------------------------------------
 
-export async function getRecetas() {
-  return await apiFetch("recetas/");
+// Login (autenticación basada en sesión)
+export async function loginUser(username, password) {
+  try {
+    const csrf = await getCsrfToken(true);
+    const res = await fetch(`${BASE_URL}login/`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrf,
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!res.ok) throw new Error("Error al iniciar sesión");
+    console.log("✅ Login correcto");
+    return true;
+  } catch (error) {
+    console.error("❌ Error en loginUser:", error);
+    return false;
+  }
 }
 
-export async function createReceta(data) {
-  return await apiFetch("recetas/", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+// Logout
+export async function logoutUser() {
+  try {
+    const csrf = getCookie("csrftoken") || (await getCsrfToken());
+    const res = await fetch(`${BASE_URL}logout/`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "X-CSRFToken": csrf,
+      },
+    });
+    if (!res.ok) throw new Error("Error al cerrar sesión");
+    console.log("✅ Logout correcto");
+    return true;
+  } catch (error) {
+    console.error("❌ Error en logoutUser:", error);
+    return false;
+  }
 }
 
-export async function updateReceta(id, data) {
-  return await apiFetch(`recetas/${id}/`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+// Verificar si hay sesión activa
+export async function checkSession() {
+  try {
+    const res = await fetch(`${BASE_URL}recetas/`, {
+      method: "GET",
+      credentials: "include",
+    });
+    if (res.ok) {
+      console.log("🔑 Sesión activa detectada");
+      return true;
+    } else {
+      console.warn("⚠️ Sesión no activa");
+      return false;
+    }
+  } catch (err) {
+    console.error("❌ Error verificando sesión:", err);
+    return false;
+  }
 }
 
+// -------------------------------------------------------------
+// 🧾 Funciones auxiliares específicas del proyecto
+// -------------------------------------------------------------
+
+// 🔹 Obtener lista de recetas
+export async function fetchRecetas() {
+  try {
+    const data = await apiFetch("recetas/");
+    return data;
+  } catch (error) {
+    console.error("❌ Error cargando recetas:", error);
+    throw error;
+  }
+}
+
+// 🔹 Crear receta
+export async function createReceta(receta) {
+  try {
+    const data = await apiFetch("recetas/", {
+      method: "POST",
+      body: JSON.stringify(receta),
+    });
+    return data;
+  } catch (error) {
+    console.error("❌ Error creando receta:", error);
+    throw error;
+  }
+}
+
+// 🔹 Actualizar receta
+export async function updateReceta(id, receta) {
+  try {
+    const data = await apiFetch(`recetas/${id}/`, {
+      method: "PUT",
+      body: JSON.stringify(receta),
+    });
+    return data;
+  } catch (error) {
+    console.error("❌ Error actualizando receta:", error);
+    throw error;
+  }
+}
+
+// 🔹 Eliminar receta
 export async function deleteReceta(id) {
-  return await apiFetch(`recetas/${id}/`, {
-    method: "DELETE",
-  });
+  try {
+    await apiFetch(`recetas/${id}/`, { method: "DELETE" });
+    console.log("✅ Receta eliminada correctamente");
+  } catch (error) {
+    console.error("❌ Error eliminando receta:", error);
+    throw error;
+  }
 }
 
-// ================================================
-// 🧂 FUNCIONES DE INGREDIENTES
-// ================================================
+// -------------------------------------------------------------
+// 📦 Plan Semanal
+// -------------------------------------------------------------
 
-export async function getIngredientes(search = "") {
-  const endpoint = search 
-    ? `ingredientes/?search=${encodeURIComponent(search)}`
-    : "ingredientes/";
-  
-  const data = await apiFetch(endpoint);
-  return extractResults(data);
+export async function fetchPlan() {
+  try {
+    return await apiFetch("plan/");
+  } catch (err) {
+    console.error("❌ Error al obtener plan semanal:", err);
+    throw err;
+  }
 }
 
+export async function addToPlan(dia, tipo_comida, receta_id) {
+  try {
+    await apiFetch("plan/", {
+      method: "POST",
+      body: JSON.stringify({ dia, tipo_comida, receta_id }),
+    });
+    console.log("✅ Añadido al plan");
+  } catch (err) {
+    console.error("❌ Error añadiendo al plan:", err);
+  }
+}
+
+export async function deleteFromPlan(itemId) {
+  try {
+    await apiFetch(`plan/${itemId}/`, { method: "DELETE" });
+    console.log("✅ Eliminado del plan");
+  } catch (err) {
+    console.error("❌ Error eliminando del plan:", err);
+  }
+}
+
+// -------------------------------------------------------------
+// 🧾 Ingredientes y unidades
+// -------------------------------------------------------------
 export async function fetchIngredientes(search = "") {
-  return await getIngredientes(search);
+  try {
+    return await apiFetch(`ingredientes/?search=${encodeURIComponent(search)}`);
+  } catch (error) {
+    console.error("❌ Error cargando ingredientes:", error);
+    return [];
+  }
 }
 
-// ================================================
-// ⚖️ FUNCIONES DE UNIDADES
-// ================================================
-
-export async function getUnidades() {
-  const data = await apiFetch("unidades/");
-  const results = extractResults(data);
-  
-  return results.map((u) => ({
-    id: u.id,
-    nombre: u.nombre ?? u.name ?? "",
-    abreviatura: u.abreviatura ?? u.abbrev ?? "",
-  }));
+export async function fetchUnidades() {
+  try {
+    return await apiFetch("unidades/");
+  } catch (error) {
+    console.error("❌ Error cargando unidades:", error);
+    return [];
+  }
 }
 
-// ================================================
-// 🧩 FUNCIONES DE INGREDIENTES-RECETA
-// ================================================
+// -------------------------------------------------------------
+// ☁️ Subida de imagen a Cloudinary (ya separada del backend)
+// -------------------------------------------------------------
+export async function uploadToCloudinary(file) {
+  const data = new FormData();
+  data.append("file", file);
+  data.append("upload_preset", "recetas_app");
 
-export async function getIngredientesReceta(recetaId) {
-  const data = await apiFetch(`ingredientesreceta/?receta=${recetaId}`);
-  return extractResults(data);
-}
-
-// ================================================
-// 🛠️ HELPERS
-// ================================================
-
-/**
- * Extrae resultados de una respuesta que puede ser:
- * - Un array directo
- * - Un objeto con paginación { results: [...] }
- */
-function extractResults(data) {
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.results)) return data.results;
-  return [];
+  try {
+    const res = await fetch("https://api.cloudinary.com/v1_1/daovhj0i4/image/upload", {
+      method: "POST",
+      body: data,
+    });
+    const result = await res.json();
+    if (!res.ok || !result.secure_url)
+      throw new Error("Error subiendo imagen a Cloudinary");
+    return result.secure_url;
+  } catch (err) {
+    console.error("❌ Error en uploadToCloudinary:", err);
+    throw err;
+  }
 }
