@@ -1,5 +1,31 @@
 // src/services/api.js
-const API_URL = "http://127.0.0.1:8000/api";
+
+export const API_URL =
+  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/";
+
+export async function apiFetch(endpoint, options = {}) {
+  const cleanUrl = `${API_URL.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`;
+  const response = await fetch(cleanUrl, {
+    ...options,
+    credentials: "include",
+  });
+
+  // Si la respuesta no es JSON o hay error, manejarlo
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    console.error(`❌ Error ${response.status} en ${cleanUrl}`, data);
+    throw new Error(data?.detail || "Error en la petición");
+  }
+
+  return data;
+}
+
 
 /* ===============================
    📘  Helpers

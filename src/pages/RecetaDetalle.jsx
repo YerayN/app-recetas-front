@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { apiFetch } from "../services/api";
 
 export default function RecetaDetalle({ onDelete }) {
   const { id } = useParams();
@@ -10,8 +11,7 @@ export default function RecetaDetalle({ onDelete }) {
   useEffect(() => {
     const fetchReceta = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/recetas/${id}/`);
-        const data = await res.json();
+        const data = await apiFetch(`recetas/${id}/`);
         setReceta(data);
       } catch (error) {
         console.error("Error al cargar receta:", error);
@@ -115,14 +115,18 @@ export default function RecetaDetalle({ onDelete }) {
           </Link>
           <button
             onClick={async () => {
-              if (confirm("¿Seguro que quieres eliminar esta receta?")) {
-                await fetch(`http://127.0.0.1:8000/api/recetas/${receta.id}/`, {
-                  method: "DELETE",
-                });
+              const confirmar = confirm("¿Seguro que quieres eliminar esta receta?");
+              if (!confirmar) return;
 
+              try {
+                await apiFetch(`recetas/${receta.id}/`, { method: "DELETE" });
                 if (onDelete) onDelete();
+
                 alert("✅ Receta eliminada correctamente");
                 navigate("/recetas");
+              } catch (error) {
+                console.error("Error eliminando receta:", error);
+                alert("❌ No se pudo eliminar la receta. Revisa la consola o el servidor.");
               }
             }}
             className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition"

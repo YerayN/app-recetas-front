@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { apiFetch } from "../services/api";
 
 export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
   const { id } = useParams();
@@ -15,20 +16,19 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
   const [mensaje, setMensaje] = useState("");
 
   // Si estamos editando, cargar la receta existente
-  useEffect(() => {
-    if (modo === "editar" && id) {
-      fetch(`http://127.0.0.1:8000/api/recetas/${id}/`)
-        .then((res) => res.json())
-        .then((data) => {
-          setNombre(data.nombre || "");
-          setDescripcion(data.descripcion || "");
-          setTiempo(data.tiempo_preparacion || "");
-          setInstrucciones(data.instrucciones || "");
-          setImagenExistente(data.imagen || "");
-        })
-        .catch((err) => console.error("Error cargando receta:", err));
-    }
-  }, [modo, id]);
+useEffect(() => {
+  if (modo === "editar" && id) {
+    apiFetch(`recetas/${id}/`)
+      .then((data) => {
+        setNombre(data.nombre || "");
+        setDescripcion(data.descripcion || "");
+        setTiempo(data.tiempo_preparacion || "");
+        setInstrucciones(data.instrucciones || "");
+        setImagenExistente(data.imagen || "");
+      })
+      .catch((err) => console.error("Error cargando receta:", err));
+  }
+}, [modo, id]);
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -68,7 +68,7 @@ const handleSubmit = async (e) => {
     // 3️⃣ Enviar al backend según modo
     if (modo === "editar") {
       // PUT para actualizar
-      await fetch(`http://127.0.0.1:8000/api/recetas/${id}/`, {
+      await apiFetch(`recetas/${id}/`, {
         method: "PUT",
         body: formData,
         credentials: "include",
@@ -80,7 +80,7 @@ const handleSubmit = async (e) => {
       setTimeout(() => navigate("/recetas"), 1000);
     } else {
       // ✅ POST para crear nueva
-      const res = await fetch(`http://127.0.0.1:8000/api/recetas/`, {
+      await apiFetch("recetas/", {
         method: "POST",
         body: formData,
         credentials: "include",

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiFetch } from "../services/api";
 
 const API = "http://127.0.0.1:8000/api/register/";
 
@@ -10,13 +11,16 @@ export default function Registro() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await fetch(API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-    if (res.ok) setOk(true);
-    else setError("No se pudo registrar el usuario");
+    try {
+      await apiFetch("register/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      setOk(true);
+    } catch {
+      setError("No se pudo registrar el usuario");
+    }
   };
 
   if (ok)

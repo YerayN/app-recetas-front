@@ -25,7 +25,7 @@ import {
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 
-import { API } from "./config";
+import { apiFetch } from "./services/api";
 function AppContent() {
   const [recetas, setRecetas] = useState([]);
   const navigate = useNavigate();
@@ -33,51 +33,32 @@ function AppContent() {
   const { usuario, logout } = useContext(AuthContext);
 
   // 🔹 Cargar recetas desde el backend
-  const fetchRecetas = async () => {
-    try {
-      const res = await fetch(`${API}/recetas/`, { credentials: "include" });
-      if (!res.ok) throw new Error("Error al cargar recetas");
-      const data = await res.json();
-      setRecetas(data);
-    } catch (error) {
-      console.error("Error cargando recetas:", error);
-    }
-  };
+const fetchRecetas = async () => {
+  try {
+    const data = await apiFetch("recetas/");
+    setRecetas(data);
+  } catch (error) {
+    console.error("Error cargando recetas:", error);
+  }
+};
+
 
   useEffect(() => {
     fetchRecetas();
   }, []);
 
   // 🔹 Crear receta
-  const handleCreate = async (formData) => {
-    try {
-      const res = await fetch(`${API}/recetas/`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
+const handleCreate = async (formData) => {
+  try {
+    await apiFetch("recetas/", { method: "POST", body: formData });
+    await fetchRecetas();
+    navigate("/recetas");
+  } catch (error) {
+    console.error("Error al crear receta:", error);
+    alert("❌ Error de conexión con el servidor");
+  }
+};
 
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        console.error("POST /recetas/ error:", data);
-        const msg =
-          typeof data === "object" && data
-            ? Object.entries(data)
-                .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
-                .join("\n")
-            : "Error al guardar receta";
-        alert(`❌ ${msg}`);
-        return;
-      }
-
-      await fetchRecetas();
-      navigate("/recetas");
-    } catch (error) {
-      console.error("Error al crear receta:", error);
-      alert("❌ Error de conexión con el servidor");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] text-gray-800 flex flex-col font-['Inter'] pb-20 md:pb-0">

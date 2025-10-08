@@ -1,40 +1,34 @@
 import { createContext, useState, useEffect } from "react";
+import { apiFetch } from "../services/api";
 
 export const AuthContext = createContext();
 
-import { API } from "../config";
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
 
-  // Comprobar sesión activa
   useEffect(() => {
-    fetch(`${API}/recetas/`, { credentials: "include" })
-      .then(res => {
-        if (res.ok) setUsuario({ logged: true });
-        else setUsuario(null);
-      })
+    apiFetch("recetas/")
+      .then(() => setUsuario({ logged: true }))
       .catch(() => setUsuario(null));
   }, []);
 
   const login = async (username, password) => {
-    const res = await fetch(`${API}/login/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-      credentials: "include",
-    });
-    if (res.ok) {
+    try {
+      await apiFetch("login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
       setUsuario({ logged: true, username });
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
+
   const logout = async () => {
-    await fetch(`${API}/logout/`, {
-      method: "POST",
-      credentials: "include",
-    });
+    await apiFetch("logout/", { method: "POST" });
     setUsuario(null);
   };
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import DiaColumna from "../components/DiaColumna";
 import ModalSeleccionReceta from "../components/ModalSeleccionReceta";
 
-import { API } from "../config";
+import { apiFetch } from "../services/api";
 const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const tiposComida = ["desayuno", "almuerzo", "comida", "merienda", "cena", "snack"];
 
@@ -25,75 +25,56 @@ export default function PlanSemanal() {
   const [error, setError] = useState(null);
 
   // 🔹 Cargar recetas desde el backend
-  useEffect(() => {
-    const fetchRecetas = async () => {
-      try {
-        const res = await fetch(`${API}/recetas/`, {
-          credentials: "include", // 👈 ESTA LÍNEA ES CLAVE
-        });
-        if (!res.ok) throw new Error("Error al cargar recetas");
-        const data = await res.json();
-        setRecetas(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRecetas();
-  }, []);
+useEffect(() => {
+  const fetchRecetas = async () => {
+    try {
+      const data = await apiFetch("recetas/");
+      setRecetas(data);
+    } catch (err) {
+      setError("Error al cargar recetas");
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchRecetas();
+}, []);
 
   // 🔹 Cargar plan semanal guardado del backend
-  useEffect(() => {
-    const fetchPlan = async () => {
-      try {
-        const res = await fetch(`${API}/plan/`, { credentials: "include" });
-        if (!res.ok) throw new Error("Error al cargar el plan semanal");
-        const data = await res.json();
+useEffect(() => {
+  const fetchPlan = async () => {
+    try {
+      const data = await apiFetch("plan/");
+      const nuevoPlan = Object.fromEntries(
+        diasSemana.map((dia) => [
+          dia,
+          Object.fromEntries(tiposComida.map((tc) => [tc, []])),
+        ])
+      );
 
-        const nuevoPlan = Object.fromEntries(
-          diasSemana.map((dia) => [
-            dia,
-            Object.fromEntries(tiposComida.map((tc) => [tc, []])),
-          ])
-        );
+      data.forEach((item) => {
+        nuevoPlan[item.dia][item.tipo_comida].push(item.receta);
+      });
 
-        data.forEach((item) => {
-          nuevoPlan[item.dia][item.tipo_comida].push(item.receta);
-        });
-
-        setPlan(nuevoPlan);
-      } catch (err) {
-        console.error(err);
-        setError("No se pudo cargar el plan semanal.");
-      }
-    };
-    fetchPlan();
-  }, []);
+      setPlan(nuevoPlan);
+    } catch {
+      setError("No se pudo cargar el plan semanal.");
+    }
+  };
+  fetchPlan();
+}, []);
 
   // 🔹 Guardar un elemento del plan
   const savePlanItem = async (dia, tipo, recetaId) => {
   try {
-    const nuevoItem = {
-      dia: dia,
-      tipo_comida: tipo,
-      receta_id: recetaId,
-    };
-
-    const res = await fetch(`${API}/plan/`, {
+    await apiFetch("plan/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(nuevoItem),
-      credentials: "include", // 👈 mantener cookies
+      body: JSON.stringify({
+        dia,
+        tipo_comida: tipo,
+        receta_id: recetaId,
+      }),
     });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      console.error("Error guardando plan:", errData);
-      throw new Error("No se pudo guardar el plan");
-    }
-
     console.log("✅ Plan guardado correctamente");
   } catch (err) {
     console.error("Error guardando plan:", err);
@@ -102,23 +83,19 @@ export default function PlanSemanal() {
 
 
   // 🔹 Eliminar un elemento del plan
-  const deletePlanItem = async (dia, tipo, recetaId) => {
-    try {
-      const res = await fetch(`${API}/plan/`, { credentials: "include" });
-      const data = await res.json();
-      const item = data.find(
-        (p) => p.dia === dia && p.tipo_comida === tipo && p.receta.id === recetaId
-      );
-      if (item) {
-        await fetch(`${API}/plan/${item.id}/`, {
-          method: "DELETE",
-          credentials: "include",
-        });
-      }
-    } catch (err) {
-      console.error("Error eliminando plan:", err);
+const deletePlanItem = async (dia, tipo, recetaId) => {
+  try {
+    const data = await apiFetch("plan/");
+    const item = data.find(
+      (p) => p.dia === dia && p.tipo_comida === tipo && p.receta.id === recetaId
+    );
+    if (item) {
+      await apiFetch(`plan/${item.id}/`, { method: "DELETE" });
     }
-  };
+  } catch (err) {
+    console.error("Error eliminando plan:", err);
+  }
+};
 
   // 🔹 Añadir receta (local + backend)
   const handleAddReceta = (dia, tipo, receta) => {
