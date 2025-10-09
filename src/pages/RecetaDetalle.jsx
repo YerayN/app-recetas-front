@@ -82,14 +82,30 @@ export default function RecetaDetalle({ onDelete }) {
           </h2>
           {receta.ingredientes?.length > 0 ? (
             <ul className="list-disc list-inside text-gray-700">
-              {receta.ingredientes.map((ing, i) => (
-                <li key={i}>
-                  {ing.cantidad ? `${ing.cantidad} ` : ""}
-                  {ing.unidad ? `${ing.unidad} de ` : ""}
-                  {ing.ingrediente?.nombre || "Ingrediente sin nombre"}
-                </li>
-              ))}
+              {receta.ingredientes.map((ing, i) => {
+                // 🧩 Determinar nombre legible de unidad
+                const unidadLabel =
+                  ing.unidad_nombre ||
+                  ing.unidad?.abreviatura ||
+                  ing.unidad?.nombre ||
+                  "";
+
+                // 🧩 Determinar nombre legible de ingrediente
+                const ingredienteLabel =
+                  ing.ingrediente_nombre ||
+                  ing.ingrediente?.nombre ||
+                  "Ingrediente sin nombre";
+
+                return (
+                  <li key={i}>
+                    {ing.cantidad ? `${ing.cantidad} ` : ""}
+                    {unidadLabel ? `${unidadLabel} de ` : ""}
+                    {ingredienteLabel}
+                  </li>
+                );
+              })}
             </ul>
+
           ) : (
             <p className="text-gray-500 italic">No se añadieron ingredientes.</p>
           )}
