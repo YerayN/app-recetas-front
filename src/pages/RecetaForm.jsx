@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiFetch } from "../services/api";
-import IngredientesList from "./IngredientesList";
+import IngredientesList from "../components/IngredientesList";
 
 export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
   const { id } = useParams();
