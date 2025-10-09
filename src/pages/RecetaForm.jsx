@@ -33,11 +33,11 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
           if (Array.isArray(data.ingredientes)) {
             setIngredientes(
               data.ingredientes.map((item) => ({
-                cantidad: item.cantidad || "",
-                unidad: item.unidad || null,
                 ingrediente: item.ingrediente
                   ? { id: item.ingrediente, nombre: item.ingrediente_nombre }
                   : null,
+                cantidad: item.cantidad || "",
+                unidad: item.unidad || null,
               }))
             );
           }
