@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiFetch } from "../services/api";
+import IngredientesList from "./IngredientesList";
 
 export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
   const { id } = useParams();
@@ -10,11 +11,14 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
   const [descripcion, setDescripcion] = useState("");
   const [tiempo, setTiempo] = useState("");
   const [instrucciones, setInstrucciones] = useState("");
+  const [categoriaNutricional, setCategoriaNutricional] = useState("");
+  const [ingredientes, setIngredientes] = useState([]);
   const [imagen, setImagen] = useState(null);
   const [imagenExistente, setImagenExistente] = useState("");
   const [subiendo, setSubiendo] = useState(false);
   const [mensaje, setMensaje] = useState("");
 
+  // 🔹 Cargar datos al editar receta
   useEffect(() => {
     if (modo === "editar" && id) {
       apiFetch(`recetas/${id}/`)
@@ -23,12 +27,26 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
           setDescripcion(data.descripcion || "");
           setTiempo(data.tiempo_preparacion || "");
           setInstrucciones(data.instrucciones || "");
+          setCategoriaNutricional(data.categoria_nutricional || "");
           setImagenExistente(data.imagen || "");
+          // Mapear ingredientes recibidos
+          if (Array.isArray(data.ingredientes)) {
+            setIngredientes(
+              data.ingredientes.map((item) => ({
+                cantidad: item.cantidad || "",
+                unidad: item.unidad || null,
+                ingrediente: item.ingrediente
+                  ? { id: item.ingrediente, nombre: item.ingrediente_nombre }
+                  : null,
+              }))
+            );
+          }
         })
         .catch((err) => console.error("Error cargando receta:", err));
     }
   }, [modo, id]);
 
+  // 🔹 Guardar receta
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMensaje("");
@@ -37,7 +55,7 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
     try {
       let imageUrl = imagenExistente;
 
-      // 🔹 Subida a Cloudinary (solo si se selecciona una nueva imagen)
+      // Subida de imagen a Cloudinary si se selecciona nueva
       if (imagen) {
         const data = new FormData();
         data.append("file", imagen);
@@ -56,13 +74,21 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
         }
       }
 
-      // 🔹 Ahora enviamos JSON al backend (no FormData)
+      // Estructura final para el backend
       const nuevaReceta = {
         nombre,
         descripcion,
         tiempo_preparacion: tiempo,
         instrucciones,
+        categoria_nutricional: categoriaNutricional || null,
         imagen: imageUrl,
+        ingredientes: ingredientes
+          .filter((i) => i.ingrediente) // Solo los ingredientes válidos
+          .map((i) => ({
+            ingrediente: i.ingrediente.id,
+            cantidad: i.cantidad ? parseFloat(i.cantidad) : null,
+            unidad: i.unidad,
+          })),
       };
 
       if (modo === "editar") {
@@ -102,6 +128,7 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
         <p className="text-center text-sm font-medium text-gray-600">{mensaje}</p>
       )}
 
+      {/* Nombre */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
         <input
@@ -113,6 +140,7 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
         />
       </div>
 
+      {/* Descripción */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
         <textarea
@@ -122,6 +150,7 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
         />
       </div>
 
+      {/* Tiempo */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Tiempo (min)</label>
         <input
@@ -132,6 +161,7 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
         />
       </div>
 
+      {/* Instrucciones */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Instrucciones</label>
         <textarea
@@ -142,6 +172,31 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
         />
       </div>
 
+      {/* Categoría nutricional */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Categoría nutricional (opcional)
+        </label>
+        <select
+          value={categoriaNutricional}
+          onChange={(e) => setCategoriaNutricional(e.target.value)}
+          className="w-full border border-gray-200 rounded-lg p-2 focus:ring-2 focus:ring-[#8B5CF6]"
+        >
+          <option value="">-- Sin categoría --</option>
+          <option value="carbohidratos">Carbohidratos</option>
+          <option value="proteinas">Proteínas</option>
+          <option value="grasas">Grasas</option>
+          <option value="fibra">Fibra</option>
+        </select>
+      </div>
+
+      {/* Ingredientes */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Ingredientes</label>
+        <IngredientesList value={ingredientes} onChange={setIngredientes} />
+      </div>
+
+      {/* Imagen */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Imagen</label>
         {imagenExistente && !imagen && (
@@ -159,6 +214,7 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
         />
       </div>
 
+      {/* Botón guardar */}
       <button
         type="submit"
         disabled={subiendo}
