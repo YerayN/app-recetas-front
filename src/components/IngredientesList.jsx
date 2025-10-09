@@ -35,6 +35,14 @@ export default function IngredientesList({ value = [], onChange }) {
           key={index}
           className="flex flex-col md:flex-row gap-2 md:items-center border p-3 rounded-md bg-white shadow-sm"
         >
+
+          <div className="flex-1">
+            <IngredienteAutocomplete
+              value={item.ingrediente}
+              onChange={(i) => handleChange(index, "ingrediente", i)}
+            />
+          </div>
+
           <input
             type="number"
             min="0"
@@ -48,13 +56,6 @@ export default function IngredientesList({ value = [], onChange }) {
             <UnitsSelect
               value={item.unidad}
               onChange={(u) => handleChange(index, "unidad", u)}
-            />
-          </div>
-
-          <div className="flex-1">
-            <IngredienteAutocomplete
-              value={item.ingrediente}
-              onChange={(i) => handleChange(index, "ingrediente", i)}
             />
           </div>
 
