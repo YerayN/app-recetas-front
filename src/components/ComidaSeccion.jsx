@@ -36,7 +36,7 @@ export default function ComidaSeccion({
               <div className="flex justify-between items-center text-xs text-gray-500 mt-1 mb-2 px-1">
                 <span>👥 {receta.comensales || 2} comensales</span>
                 <button
-                  onClick={() => onAdjust?.(dia, tipo, receta)}
+                  onClick={() => onAdjust && onAdjust(dia, tipo, receta)}
                   className="bg-blue-500 hover:bg-blue-600 text-white rounded-md px-2 py-1 text-xs transition"
                 >
                   Serán más comensales?
