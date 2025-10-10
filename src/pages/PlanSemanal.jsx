@@ -140,34 +140,42 @@ export default function PlanSemanal() {
   };
 
   // 🔹 Ajustar comensales manualmente
-  const handleAdjustComensales = async (dia, tipo, receta) => {
-    const nuevoValor = prompt(
-      `¿Cuántos comensales comerán ${receta.nombre}?`,
-      receta.comensales || 2
-    );
+const handleAdjustComensales = async (dia, tipo, receta) => {
+  const nuevoValor = prompt(
+    `¿Cuántos comensales comerán ${receta.nombre}?`,
+    receta.comensales || 2
+  );
 
-    if (!nuevoValor || isNaN(nuevoValor)) return;
+  if (!nuevoValor || isNaN(nuevoValor)) return;
 
-    try {
-      await apiFetch(`plan/${receta.id_plan}/`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comensales: Number(nuevoValor) }),
-      });
+  try {
+    const planId = receta.id_plan || receta.id; // 👈 aseguramos tener el ID real
 
-      setPlan((prev) => ({
-        ...prev,
-        [dia]: {
-          ...prev[dia],
-          [tipo]: prev[dia][tipo].map((r) =>
-            r.id_plan === receta.id_plan ? { ...r, comensales: Number(nuevoValor) } : r
-          ),
-        },
-      }));
-    } catch (error) {
-      console.error("Error al actualizar comensales:", error);
-    }
-  };
+    await apiFetch(`plan/${planId}/`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comensales: Number(nuevoValor) }),
+    });
+
+    // 🔹 Actualizamos el estado en memoria (sin esperar reload)
+    setPlan((prev) => ({
+      ...prev,
+      [dia]: {
+        ...prev[dia],
+        [tipo]: prev[dia][tipo].map((r) =>
+          (r.id_plan || r.id) === planId
+            ? { ...r, comensales: Number(nuevoValor) }
+            : r
+        ),
+      },
+    }));
+
+    console.log(`✅ Comensales actualizados a ${nuevoValor}`);
+  } catch (error) {
+    console.error("Error al actualizar comensales:", error);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] p-4">
