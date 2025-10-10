@@ -44,7 +44,15 @@ function AppContent() {
     }
   };
 
-
+// 🔹 Inicialización segura: obtener CSRF y cargar recetas si hay sesión
+useEffect(() => {
+  const init = async () => {
+    // Asegura que el token CSRF y la cookie se sincronicen
+    await getCsrfToken();
+    if (usuario) await fetchRecetas();
+  };
+  init();
+}, [usuario]);
 
 
 // 🔹 Redirección automática según sesión (solo cuando AuthContext terminó de cargar)
