@@ -9,7 +9,7 @@ const tiposComidaOrden = [
   { clave: "snack", icono: "🍎", nombre: "Snack" },
 ];
 
-export default function DiaColumna({ nombre, comidas, onAdd, onRemove }) {
+export default function DiaColumna({ nombre, comidas, onAdd, onRemove, onAdjust }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm p-3 flex flex-col">
       <h2 className="text-lg font-semibold text-[#8B5CF6] mb-2 text-center">
