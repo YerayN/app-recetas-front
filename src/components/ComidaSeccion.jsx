@@ -39,7 +39,7 @@ export default function ComidaSeccion({
                   onClick={() => onAdjust && onAdjust(dia, tipo, receta)}
                   className="bg-blue-500 hover:bg-blue-600 text-white rounded-md px-2 py-1 text-xs transition"
                 >
-                  Serán más comensales?
+                  +
                 </button>
               </div>
             </div>

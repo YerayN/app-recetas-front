@@ -143,38 +143,40 @@ export default function PlanSemanal() {
 const handleAdjustComensales = async (dia, tipo, receta) => {
   const nuevoValor = prompt(
     `¿Cuántos comensales comerán ${receta.nombre}?`,
-    receta.comensales || 2
+    receta.comensales ?? 2
   );
 
   if (!nuevoValor || isNaN(nuevoValor)) return;
 
   try {
-    const planId = receta.id_plan || receta.id; // 👈 aseguramos tener el ID real
-
-    await apiFetch(`plan/${planId}/`, {
+    const planId = receta.id_plan ?? receta.id;
+    const resp = await apiFetch(`plan/${planId}/`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ comensales: Number(nuevoValor) }),
     });
 
-    // 🔹 Actualizamos el estado en memoria (sin esperar reload)
+    // resp ahora contiene el plan actualizado
+    const valorReal = resp?.comensales ?? Number(nuevoValor);
+
     setPlan((prev) => ({
       ...prev,
       [dia]: {
         ...prev[dia],
         [tipo]: prev[dia][tipo].map((r) =>
-          (r.id_plan || r.id) === planId
-            ? { ...r, comensales: Number(nuevoValor) }
+          (r.id_plan ?? r.id) === planId
+            ? { ...r, comensales: valorReal }
             : r
         ),
       },
     }));
 
-    console.log(`✅ Comensales actualizados a ${nuevoValor}`);
+    console.log(`✅ Comensales actualizados a ${valorReal}`);
   } catch (error) {
     console.error("Error al actualizar comensales:", error);
   }
 };
+
 
 
   return (
