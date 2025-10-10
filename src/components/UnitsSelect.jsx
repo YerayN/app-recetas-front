@@ -4,7 +4,7 @@ import { apiFetch } from "../services/api";
 export default function UnitsSelect({
   value,
   onChange,
-  placeholder = "Selecciona unidad...",
+  placeholder = "Unidad de medida",
   disabled = false,
   className = "",
 }) {

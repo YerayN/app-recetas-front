@@ -64,7 +64,7 @@ useEffect(() => {
 }, []);
 
   // 🔹 Guardar un elemento del plan
-  const savePlanItem = async (dia, tipo, recetaId) => {
+const savePlanItem = async (dia, tipo, recetaId, comensales = 2) => {
   try {
     await apiFetch("plan/", {
       method: "POST",
@@ -73,6 +73,7 @@ useEffect(() => {
         dia,
         tipo_comida: tipo,
         receta_id: recetaId,
+        comensales,
       }),
     });
     console.log("✅ Plan guardado correctamente");
@@ -80,6 +81,7 @@ useEffect(() => {
     console.error("Error guardando plan:", err);
   }
 };
+
 
 
   // 🔹 Eliminar un elemento del plan
@@ -106,17 +108,17 @@ const deletePlanItem = async (dia, tipo, recetaId) => {
     return;
   }
 
+  const comensales = prompt("¿Cuántos comensales para esta receta?", 2); // o el valor del hogar si lo tienes en contexto
+
   setPlan((prev) => ({
     ...prev,
     [dia]: {
       ...prev[dia],
-      [tipo]: [...prev[dia][tipo], receta],
+      [tipo]: [...prev[dia][tipo], { ...receta, comensales: Number(comensales) }],
     },
   }));
 
-  // 🔹 Guardar en backend (usa el id de la receta)
-  savePlanItem(dia, tipo, receta.id);
-
+  savePlanItem(dia, tipo, receta.id, Number(comensales));
   setModalAbierto(false);
 };
 
