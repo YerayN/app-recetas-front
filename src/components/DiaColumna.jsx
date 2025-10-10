@@ -27,6 +27,7 @@ export default function DiaColumna({ nombre, comidas, onAdd, onRemove }) {
             recetas={comidas[clave]}
             onAdd={onAdd}
             onRemove={onRemove}
+            onAdjust={onAdjust}
           />
         ))}
       </div>
