@@ -62,7 +62,7 @@ export default function IngredientesList({ value = [], onChange }) {
 
           <button
             onClick={() => handleRemove(index)}
-            className="mt-2 sm:mt-0 bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-2 w-full sm:w-auto transition"
+            className="mt-4 sm:mt-0 bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-2 w-full sm:w-auto transition"
           >
             Eliminar
           </button>
