@@ -13,6 +13,7 @@ import RecetaForm from "./pages/RecetaForm";
 import RecetasList from "./pages/RecetasList";
 import RecetaDetalle from "./pages/RecetaDetalle";
 import PlanSemanal from "./pages/PlanSemanal";
+import ListaCompra from "./pages/ListaCompra";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -218,9 +219,7 @@ const isProtected = usuario;
             path="/lista-compra"
             element={
               <ProtectedRoute>
-                <div className="text-center py-10 text-gray-600">
-                  Aquí irá tu lista de la compra 🛒
-                </div>
+                <ListaCompra />
               </ProtectedRoute>
             }
           />
