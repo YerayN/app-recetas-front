@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { fetchIngredientes } from "../services/api";
 
 export default function IngredienteAutocomplete({ value, onChange }) {
@@ -6,8 +6,20 @@ export default function IngredienteAutocomplete({ value, onChange }) {
   const [results, setResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const containerRef = useRef(null);
 
-  // Fetch con debounce (espera 300ms tras dejar de escribir)
+  // 🔹 Cerrar lista si se hace clic fuera (ideal para móvil)
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 🔹 Buscar ingredientes con debounce
   useEffect(() => {
     const delay = setTimeout(() => {
       if (search.length > 1) {
@@ -34,12 +46,13 @@ export default function IngredienteAutocomplete({ value, onChange }) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <input
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onFocus={() => search.length > 1 && setShowDropdown(true)}
+        onBlur={() => setTimeout(() => setShowDropdown(false), 150)} // 🔹 Cierra al perder foco
         placeholder="Buscar ingrediente..."
         className="w-full border rounded-md p-2 focus:ring-2 focus:ring-orange-400"
       />
@@ -53,7 +66,7 @@ export default function IngredienteAutocomplete({ value, onChange }) {
           {results.map((item) => (
             <li
               key={item.id}
-              onClick={() => handleSelect(item)}
+              onMouseDown={() => handleSelect(item)} // 🔹 Usar onMouseDown evita que se cierre antes del click
               className="px-3 py-1 hover:bg-orange-100 cursor-pointer"
             >
               {item.nombre}
