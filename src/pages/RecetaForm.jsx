@@ -19,44 +19,42 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
   const [mensaje, setMensaje] = useState("");
 
   // 🔹 Cargar datos al editar receta
-  useEffect(() => {
-    if (modo === "editar" && id) {
-      apiFetch(`recetas/${id}/`)
-        .then((data) => {
-          setNombre(data.nombre || "");
-          setDescripcion(data.descripcion || "");
-          setTiempo(data.tiempo_preparacion || "");
-          setInstrucciones(data.instrucciones || "");
-          setCategoriaNutricional(data.categoria_nutricional || "");
-          setImagenExistente(data.imagen || "");
+useEffect(() => {
+  if (modo === "editar" && id) {
+    apiFetch(`recetas/${id}/`)
+      .then((data) => {
+        setNombre(data.nombre || "");
+        setDescripcion(data.descripcion || "");
+        setTiempo(data.tiempo_preparacion || "");
+        setInstrucciones(data.instrucciones || "");
+        setCategoriaNutricional(data.categoria_nutricional || "");
+        setImagenExistente(data.imagen || "");
 
-          // ✅ Mapeo mejorado de ingredientes
-          if (Array.isArray(data.ingredientes)) {
-            setIngredientes(
-              data.ingredientes.map((item) => ({
-                ingrediente: item.ingrediente
-                  ? {
-                      id: item.ingrediente.id ?? item.ingrediente, // Asegura ID
-                      nombre:
-                        item.ingrediente.nombre ??
-                        item.ingrediente_nombre ??
-                        "",
-                    }
-                  : null,
-                cantidad: item.cantidad ?? "",
-                unidad:
-                  typeof item.unidad === "object"
-                    ? item.unidad.id
-                    : item.unidad ?? null,
-              }))
-            );
-          } else {
-            setIngredientes([]);
-          }
-        })
-        .catch((err) => console.error("Error cargando receta:", err));
-    }
-  }, [modo, id]);
+        // ✅ Cargar ingredientes con formato que usa IngredientesList
+        if (Array.isArray(data.ingredientes)) {
+          setIngredientes(
+            data.ingredientes.map((item) => ({
+              ingrediente: item.ingrediente
+                ? {
+                    id: item.ingrediente.id,
+                    nombre: item.ingrediente.nombre,
+                  }
+                : { id: null, nombre: "" },
+              cantidad: item.cantidad ?? "",
+              unidad:
+                item.unidad && typeof item.unidad === "object"
+                  ? item.unidad.id
+                  : item.unidad ?? null,
+            }))
+          );
+        } else {
+          setIngredientes([]);
+        }
+      })
+      .catch((err) => console.error("Error cargando receta:", err));
+  }
+}, [modo, id]);
+
 
   // 🔹 Guardar receta
   const handleSubmit = async (e) => {

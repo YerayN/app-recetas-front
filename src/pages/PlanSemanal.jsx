@@ -22,8 +22,10 @@ export default function PlanSemanal() {
   const [recetas, setRecetas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [listaCompra, setListaCompra] = useState([]);
+  const [mostrarLista, setMostrarLista] = useState(false);
 
-  // 🔹 Cargar recetas desde el backend
+  // 🔹 Cargar recetas
   useEffect(() => {
     const fetchRecetas = async () => {
       try {
@@ -38,7 +40,7 @@ export default function PlanSemanal() {
     fetchRecetas();
   }, []);
 
-  // 🔹 Cargar plan semanal guardado del backend
+  // 🔹 Cargar plan semanal
   useEffect(() => {
     const fetchPlan = async () => {
       try {
@@ -53,7 +55,7 @@ export default function PlanSemanal() {
         data.forEach((item) => {
           nuevoPlan[item.dia][item.tipo_comida].push({
             ...item.receta,
-            comensales: item.comensales || 2,
+            comensales: item.comensales, // usa el valor real del backend
             id_plan: item.id,
           });
         });
@@ -66,7 +68,7 @@ export default function PlanSemanal() {
     fetchPlan();
   }, []);
 
-  // 🔹 Guardar receta en el plan semanal
+  // 🔹 Guardar receta en el plan
   const savePlanItem = async (dia, tipo, recetaId, comensales = 2) => {
     try {
       await apiFetch("plan/", {
@@ -100,7 +102,7 @@ export default function PlanSemanal() {
     }
   };
 
-  // 🔹 Añadir receta (usa comensales por defecto del hogar)
+  // 🔹 Añadir receta (usa comensales por defecto del hogar = 2 aquí)
   const handleAddReceta = (dia, tipo, receta) => {
     if (!receta) {
       setDiaSeleccionado(dia);
@@ -109,7 +111,7 @@ export default function PlanSemanal() {
       return;
     }
 
-    const comensales = 2; // valor por defecto del hogar
+    const comensales = 2;
 
     setPlan((prev) => ({
       ...prev,
@@ -139,45 +141,63 @@ export default function PlanSemanal() {
     deletePlanItem(dia, tipoComida, recetaEliminada.id);
   };
 
-  // 🔹 Ajustar comensales manualmente
-const handleAdjustComensales = async (dia, tipo, receta) => {
-  const nuevoValor = prompt(
-    `¿Cuántos comensales comerán ${receta.nombre}?`,
-    receta.comensales ?? 2
-  );
+  // 🔹 Ajustar comensales
+  const handleAdjustComensales = async (dia, tipo, receta) => {
+    const nuevoValor = prompt(
+      `¿Cuántos comensales comerán ${receta.nombre}?`,
+      receta.comensales ?? 2
+    );
 
-  if (!nuevoValor || isNaN(nuevoValor)) return;
+    if (!nuevoValor || isNaN(nuevoValor)) return;
 
-  try {
-    const planId = receta.id_plan ?? receta.id;
-    const resp = await apiFetch(`plan/${planId}/`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comensales: Number(nuevoValor) }),
-    });
+    try {
+      const planId = receta.id_plan ?? receta.id;
+      const resp = await apiFetch(`plan/${planId}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comensales: Number(nuevoValor) }),
+      });
 
-    // resp ahora contiene el plan actualizado
-    const valorReal = resp?.comensales ?? Number(nuevoValor);
+      const valorReal = resp?.comensales ?? Number(nuevoValor);
 
-    setPlan((prev) => ({
-      ...prev,
-      [dia]: {
-        ...prev[dia],
-        [tipo]: prev[dia][tipo].map((r) =>
-          (r.id_plan ?? r.id) === planId
-            ? { ...r, comensales: valorReal }
-            : r
-        ),
-      },
-    }));
+      setPlan((prev) => ({
+        ...prev,
+        [dia]: {
+          ...prev[dia],
+          [tipo]: prev[dia][tipo].map((r) =>
+            (r.id_plan ?? r.id) === planId
+              ? { ...r, comensales: valorReal }
+              : r
+          ),
+        },
+      }));
+    } catch (error) {
+      console.error("Error al actualizar comensales:", error);
+    }
+  };
 
-    console.log(`✅ Comensales actualizados a ${valorReal}`);
-  } catch (error) {
-    console.error("Error al actualizar comensales:", error);
-  }
-};
+  // 🛒 Generar lista de la compra
+  const generarListaCompra = async () => {
+    try {
+      const data = await apiFetch("plan/lista-compra/");
+      setListaCompra(Array.isArray(data) ? data : []);
+      setMostrarLista(true);
+    } catch (error) {
+      console.error("Error al generar lista de la compra:", error);
+      alert("Error al generar la lista de la compra");
+    }
+  };
 
+  // Agrupar por categoría (función util)
+  const agruparPorCategoria = (lista) =>
+    lista.reduce((acc, item) => {
+      const cat = item.categoria || "otros";
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    }, {});
 
+  const grupos = agruparPorCategoria(listaCompra);
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] p-4">
@@ -187,6 +207,46 @@ const handleAdjustComensales = async (dia, tipo, receta) => {
 
       {error && (
         <p className="text-center text-red-500 text-sm mb-4">⚠️ {error}</p>
+      )}
+
+      {/* Botón lista */}
+      <div className="flex justify-center mb-6">
+        <button
+          onClick={generarListaCompra}
+          className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white px-4 py-2 rounded-lg shadow-md transition"
+        >
+          🛒 Generar lista de la compra
+        </button>
+      </div>
+
+      {/* Lista generada */}
+      {mostrarLista && (
+        <div className="bg-white shadow-md rounded-2xl p-4 mb-6 max-w-3xl mx-auto">
+          <h2 className="text-xl font-semibold text-[#8B5CF6] mb-3 text-center">
+            Lista de la compra
+          </h2>
+
+          {Object.keys(grupos).length > 0 ? (
+            Object.entries(grupos).map(([categoria, items]) => (
+              <div key={categoria} className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-700 mb-2 border-b pb-1">
+                  {categoria.replaceAll("_", " ").toUpperCase()}
+                </h3>
+                <ul className="space-y-1 text-gray-700">
+                  {items.map((i, idx) => (
+                    <li key={`${categoria}-${idx}`}>
+                      {i.nombre}: <b>{Math.round(i.cantidad * 100) / 100}</b> {i.unidad}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-gray-500 italic">
+              No hay ingredientes en la lista
+            </p>
+          )}
+        </div>
       )}
 
       {loading ? (
