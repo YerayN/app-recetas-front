@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import UnitsSelect from "./UnitsSelect";
 import IngredienteAutocomplete from "./IngredienteAutocomplete";
 
 export default function IngredientesList({ value = [], onChange }) {
   const [ingredientes, setIngredientes] = useState(value);
 
+  // 👇 sincroniza el estado interno cuando cambie la prop value
+  useEffect(() => {
+    setIngredientes(value || []);
+  }, [value]);
+
   const handleAdd = () => {
-    const newList = [
-      ...ingredientes,
-      { cantidad: "", unidad: null, ingrediente: null },
-    ];
+    const newList = [...ingredientes, { cantidad: "", unidad: null, ingrediente: null }];
     setIngredientes(newList);
     onChange(newList);
   };
@@ -31,35 +33,21 @@ export default function IngredientesList({ value = [], onChange }) {
   return (
     <div className="space-y-4">
       {ingredientes.map((item, index) => (
-        <div
-          key={index}
-          className="flex flex-col md:flex-row gap-2 md:items-center border p-3 rounded-md bg-white shadow-sm"
-        >
-
-
+        <div key={index} className="flex flex-col md:flex-row gap-2 md:items-center border p-3 rounded-md bg-white shadow-sm">
           <input
             type="number"
             min="0"
-            value={item.cantidad}
+            value={item.cantidad ?? ""}
             onChange={(e) => handleChange(index, "cantidad", e.target.value)}
             placeholder="Cantidad"
             className="w-full md:w-24 border rounded-md p-2"
           />
-
           <div className="flex-1">
-            <UnitsSelect
-              value={item.unidad}
-              onChange={(u) => handleChange(index, "unidad", u)}
-            />
+            <UnitsSelect value={item.unidad} onChange={(u) => handleChange(index, "unidad", u)} />
           </div>
-
           <div className="flex-1">
-            <IngredienteAutocomplete
-              value={item.ingrediente}
-              onChange={(i) => handleChange(index, "ingrediente", i)}
-            />
+            <IngredienteAutocomplete value={item.ingrediente} onChange={(i) => handleChange(index, "ingrediente", i)} />
           </div>
-
           <button
             onClick={() => handleRemove(index)}
             className="mt-4 sm:mt-0 bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-2 w-full sm:w-auto transition"
@@ -68,7 +56,6 @@ export default function IngredientesList({ value = [], onChange }) {
           </button>
         </div>
       ))}
-
       <button
         type="button"
         onClick={handleAdd}
