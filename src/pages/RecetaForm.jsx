@@ -18,7 +18,8 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
   const [subiendo, setSubiendo] = useState(false);
   const [mensaje, setMensaje] = useState("");
 
-  // 🔹 Cargar datos al editar receta
+
+// 🔹 Cargar datos al editar receta
 // 🔹 Cargar datos al editar receta
 useEffect(() => {
   if (modo === "editar" && id) {
@@ -41,28 +42,35 @@ useEffect(() => {
 
             const ingrNombre =
               item.ingrediente_nombre ||
-              (typeof item.ingrediente === "object" ? item.ingrediente?.nombre : "") ||
+              (typeof item.ingrediente === "object"
+                ? item.ingrediente?.nombre
+                : "") ||
               "";
 
             const unidadId =
-              typeof item.unidad === "object" ? item.unidad?.id : item.unidad ?? null;
+              typeof item.unidad === "object"
+                ? item.unidad?.id
+                : item.unidad ?? null;
 
             return {
-              ingrediente: ingrId ? { id: ingrId, nombre: ingrNombre } : { id: null, nombre: "" },
+              ingrediente: { id: ingrId, nombre: ingrNombre }, // 👈 nombre asegurado
               cantidad: item.cantidad ?? "",
               unidad: unidadId,
             };
           });
 
+          console.log("✅ Ingredientes cargados:", normalizados);
           setIngredientes(normalizados);
-          console.log("Ingredientes cargados:", normalizados);
         } else {
           setIngredientes([]);
         }
       })
-      .catch((err) => console.error("Error cargando receta:", err));
+      .catch((err) => {
+        console.error("❌ Error cargando receta:", err);
+      });
   }
 }, [modo, id]);
+
 
 
 
