@@ -19,6 +19,7 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
   const [mensaje, setMensaje] = useState("");
 
   // 🔹 Cargar datos al editar receta
+// 🔹 Cargar datos al editar receta
 useEffect(() => {
   if (modo === "editar" && id) {
     apiFetch(`recetas/${id}/`)
@@ -30,23 +31,30 @@ useEffect(() => {
         setCategoriaNutricional(data.categoria_nutricional || "");
         setImagenExistente(data.imagen || "");
 
-        // ✅ Cargar ingredientes con formato que usa IngredientesList
+        // ✅ Normalizar ingredientes del backend -> formato que usa IngredientesList
         if (Array.isArray(data.ingredientes)) {
-          setIngredientes(
-            data.ingredientes.map((item) => ({
-              ingrediente: item.ingrediente
-                ? {
-                    id: item.ingrediente.id,
-                    nombre: item.ingrediente.nombre,
-                  }
-                : { id: null, nombre: "" },
+          const normalizados = data.ingredientes.map((item) => {
+            const ingrId =
+              typeof item.ingrediente === "object"
+                ? item.ingrediente?.id
+                : item.ingrediente;
+
+            const ingrNombre =
+              item.ingrediente_nombre ||
+              (typeof item.ingrediente === "object" ? item.ingrediente?.nombre : "") ||
+              "";
+
+            const unidadId =
+              typeof item.unidad === "object" ? item.unidad?.id : item.unidad ?? null;
+
+            return {
+              ingrediente: ingrId ? { id: ingrId, nombre: ingrNombre } : { id: null, nombre: "" },
               cantidad: item.cantidad ?? "",
-              unidad:
-                item.unidad && typeof item.unidad === "object"
-                  ? item.unidad.id
-                  : item.unidad ?? null,
-            }))
-          );
+              unidad: unidadId,
+            };
+          });
+
+          setIngredientes(normalizados);
         } else {
           setIngredientes([]);
         }
@@ -54,6 +62,7 @@ useEffect(() => {
       .catch((err) => console.error("Error cargando receta:", err));
   }
 }, [modo, id]);
+
 
 
   // 🔹 Guardar receta
