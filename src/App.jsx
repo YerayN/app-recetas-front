@@ -18,6 +18,7 @@ import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthContext } from "./context/AuthContext";
+import logo from "./assets/logo.png";
 
 import {
   HomeIcon,
@@ -82,9 +83,11 @@ const isProtected = usuario;
       {/* --- Header escritorio --- */}
       <header className="hidden md:block bg-white shadow-sm">
         <nav className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <Link to="/" className="text-xl font-bold text-[#8B5CF6]">
-            RecetasApp
+          <Link to="/" className="flex items-center space-x-2">
+            <img src={logo} alt="RecetasApp" className="h-8 w-8" />
+            <span className="text-xl font-bold text-[#8B5CF6]">RecetasApp</span>
           </Link>
+
 
           {isProtected && (
             <div className="flex space-x-8 text-[15px] font-medium text-gray-600">
