@@ -8,7 +8,18 @@ export default function IngredienteAutocomplete({ value, onChange }) {
   const [loading, setLoading] = useState(false);
   const containerRef = useRef(null);
 
-  // 🔹 Cerrar lista si se hace clic fuera (ideal para móvil)
+  // 🔹 Sincronizar texto del input con el ingrediente recibido (por ejemplo, al editar receta)
+  useEffect(() => {
+    if (value && typeof value === "object") {
+      setSearch(value.nombre || "");
+    } else if (typeof value === "string") {
+      setSearch(value);
+    } else {
+      setSearch("");
+    }
+  }, [value]);
+
+  // 🔹 Cerrar lista si se hace clic fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -52,7 +63,7 @@ export default function IngredienteAutocomplete({ value, onChange }) {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onFocus={() => search.length > 1 && setShowDropdown(true)}
-        onBlur={() => setTimeout(() => setShowDropdown(false), 150)} // 🔹 Cierra al perder foco
+        onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
         placeholder="Buscar ingrediente..."
         className="w-full border rounded-md p-2 focus:ring-2 focus:ring-orange-400"
       />
@@ -66,7 +77,7 @@ export default function IngredienteAutocomplete({ value, onChange }) {
           {results.map((item) => (
             <li
               key={item.id}
-              onMouseDown={() => handleSelect(item)} // 🔹 Usar onMouseDown evita que se cierre antes del click
+              onMouseDown={() => handleSelect(item)}
               className="px-3 py-1 hover:bg-orange-100 cursor-pointer"
             >
               {item.nombre}
