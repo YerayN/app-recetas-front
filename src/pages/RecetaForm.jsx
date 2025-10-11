@@ -29,17 +29,29 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
           setInstrucciones(data.instrucciones || "");
           setCategoriaNutricional(data.categoria_nutricional || "");
           setImagenExistente(data.imagen || "");
-          // Mapear ingredientes recibidos
+
+          // ✅ Mapeo mejorado de ingredientes
           if (Array.isArray(data.ingredientes)) {
             setIngredientes(
               data.ingredientes.map((item) => ({
                 ingrediente: item.ingrediente
-                  ? { id: item.ingrediente, nombre: item.ingrediente_nombre }
+                  ? {
+                      id: item.ingrediente.id ?? item.ingrediente, // Asegura ID
+                      nombre:
+                        item.ingrediente.nombre ??
+                        item.ingrediente_nombre ??
+                        "",
+                    }
                   : null,
-                cantidad: item.cantidad || "",
-                unidad: item.unidad || null,
+                cantidad: item.cantidad ?? "",
+                unidad:
+                  typeof item.unidad === "object"
+                    ? item.unidad.id
+                    : item.unidad ?? null,
               }))
             );
+          } else {
+            setIngredientes([]);
           }
         })
         .catch((err) => console.error("Error cargando receta:", err));
@@ -83,11 +95,11 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
         categoria_nutricional: categoriaNutricional || null,
         imagen: imageUrl,
         ingredientes: ingredientes
-          .filter((i) => i.ingrediente) // Solo los ingredientes válidos
+          .filter((i) => i.ingrediente && i.ingrediente.id)
           .map((i) => ({
             ingrediente: i.ingrediente.id,
             cantidad: i.cantidad ? parseFloat(i.cantidad) : null,
-            unidad: i.unidad,
+            unidad: i.unidad ?? null,
           })),
       };
 
@@ -130,7 +142,9 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
 
       {/* Nombre */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Nombre
+        </label>
         <input
           type="text"
           value={nombre}
@@ -142,7 +156,9 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
 
       {/* Descripción */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Descripción
+        </label>
         <textarea
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
@@ -152,7 +168,9 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
 
       {/* Tiempo */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Tiempo (min)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Tiempo (min)
+        </label>
         <input
           type="number"
           value={tiempo}
@@ -163,7 +181,9 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
 
       {/* Instrucciones */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Instrucciones</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Instrucciones
+        </label>
         <textarea
           value={instrucciones}
           onChange={(e) => setInstrucciones(e.target.value)}
@@ -192,13 +212,17 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
 
       {/* Ingredientes */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Ingredientes</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Ingredientes
+        </label>
         <IngredientesList value={ingredientes} onChange={setIngredientes} />
       </div>
 
       {/* Imagen */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Imagen</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Imagen
+        </label>
         {imagenExistente && !imagen && (
           <img
             src={imagenExistente}
