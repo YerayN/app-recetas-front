@@ -55,6 +55,7 @@ useEffect(() => {
           });
 
           setIngredientes(normalizados);
+          console.log("Ingredientes cargados:", normalizados);
         } else {
           setIngredientes([]);
         }
