@@ -299,8 +299,7 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
 
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs text-gray-400">
-            Se enviará un email a{" "}
-            <span className="font-medium">{correoSoporte}</span>
+            Se enviará un email al desarrollador.
           </span>
           <button
             type="button"
