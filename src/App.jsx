@@ -83,10 +83,10 @@ const isProtected = usuario;
       {/* --- Header escritorio --- */}
       <header className="hidden md:block bg-white shadow-sm">
         <nav className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <Link to="/" className="flex items-center space-x-2">
-            <img src={logo} alt="RecetasApp" className="h-8 w-8" />
-            <span className="text-xl font-bold text-[#8B5CF6]">RecetasApp</span>
+          <Link to="/" className="flex items-center">
+            <img src={logo} alt="RecetasApp" className="h-10 object-contain" />
           </Link>
+
 
 
           {isProtected && (
