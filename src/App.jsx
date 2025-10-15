@@ -160,15 +160,66 @@ const isProtected = usuario;
             path="/"
             element={
               <ProtectedRoute>
-                <section className="text-center py-20">
-                  <h1 className="text-4xl font-extrabold text-[#8B5CF6] mb-4">
-                    Bienvenido a RecetasApp
+                <section className="py-16 text-center relative overflow-hidden">
+                  {/* Fondo decorativo */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#FAF8F6] via-white to-[#F3E8FF] opacity-70 -z-10"></div>
+
+                  {/* Encabezado */}
+                  <h1 className="text-5xl font-extrabold text-[#8B5CF6] mb-4">
+                    ¡Bienvenido a <span className="text-[#7C3AED]">La Despensa</span>!
                   </h1>
-                  <p className="text-lg text-gray-600">
-                    Tu gestor de recetas y planificador semanal. Organiza tus
-                    recetas y genera tu lista de la compra en un solo lugar.
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-10">
+                    Organiza tus recetas, planifica tu semana y genera tu lista de la compra en un solo lugar.
+                  </p>
+
+                  {/* Tarjetas de acceso rápido */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto px-6">
+                    {[
+                      {
+                        title: "Tus Recetas",
+                        icon: <BookOpenIcon className="h-10 w-10 text-[#8B5CF6]" />,
+                        desc: "Consulta, edita o elimina tus recetas favoritas.",
+                        link: "/recetas",
+                      },
+                      {
+                        title: "Añadir Receta",
+                        icon: <PlusCircleIcon className="h-10 w-10 text-[#8B5CF6]" />,
+                        desc: "Guarda nuevas ideas de cocina fácilmente.",
+                        link: "/recetas/nueva",
+                      },
+                      {
+                        title: "Plan Semanal",
+                        icon: <CalendarIcon className="h-10 w-10 text-[#8B5CF6]" />,
+                        desc: "Organiza tus comidas por días y horarios.",
+                        link: "/plan-semanal",
+                      },
+                      {
+                        title: "Lista de la Compra",
+                        icon: <ShoppingCartIcon className="h-10 w-10 text-[#8B5CF6]" />,
+                        desc: "Genera automáticamente tu lista de ingredientes.",
+                        link: "/lista-compra",
+                      },
+                    ].map(({ title, icon, desc, link }, i) => (
+                      <Link
+                        key={i}
+                        to={link}
+                        className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition transform hover:-translate-y-1 border border-gray-100"
+                      >
+                        <div className="flex flex-col items-center space-y-3">
+                          {icon}
+                          <h3 className="font-semibold text-gray-800 text-lg">{title}</h3>
+                          <p className="text-gray-500 text-sm">{desc}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+
+                  {/* Frase motivadora */}
+                  <p className="mt-16 text-gray-500 italic">
+                    “Una buena comida empieza con una buena organización 🍳”
                   </p>
                 </section>
+
               </ProtectedRoute>
             }
           />
