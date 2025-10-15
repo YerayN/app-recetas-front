@@ -84,7 +84,7 @@ const isProtected = usuario;
       <header className="hidden md:block bg-white shadow-sm">
         <nav className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <Link to="/" className="flex items-center">
-            <img src={logo} alt="RecetasApp" className="h-10 object-contain" />
+            <img src={logo} alt="RecetasApp" className="h-12 object-contain" />
           </Link>
 
 
