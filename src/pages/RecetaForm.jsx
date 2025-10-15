@@ -17,62 +17,71 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
   const [imagenExistente, setImagenExistente] = useState("");
   const [subiendo, setSubiendo] = useState(false);
   const [mensaje, setMensaje] = useState("");
+  const [sugerencia, setSugerencia] = useState("");
 
+  const correoSoporte =
+    import.meta.env.VITE_SOPORTE_EMAIL || "ny93yeray@gmail.com";
 
-// 🔹 Cargar datos al editar receta
-// 🔹 Cargar datos al editar receta
-useEffect(() => {
-  if (modo === "editar" && id) {
-    apiFetch(`recetas/${id}/`)
-      .then((data) => {
-        setNombre(data.nombre || "");
-        setDescripcion(data.descripcion || "");
-        setTiempo(data.tiempo_preparacion || "");
-        setInstrucciones(data.instrucciones || "");
-        setCategoriaNutricional(data.categoria_nutricional || "");
-        setImagenExistente(data.imagen || "");
+  const handleEnviarSugerencia = () => {
+    if (!sugerencia.trim()) return;
+    const subject = "Sugerencia de ingrediente faltante";
+    const body = `Hola,\n\nMe falta el siguiente ingrediente en la lista:\n\n${sugerencia}\n\n(Enviado desde La Despensa)`;
+    const mailto = `mailto:${correoSoporte}?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+  };
 
-        // ✅ Normalizar ingredientes del backend -> formato que usa IngredientesList
-        if (Array.isArray(data.ingredientes)) {
-          const normalizados = data.ingredientes.map((item) => {
-            const ingrId =
-              typeof item.ingrediente === "object"
-                ? item.ingrediente?.id
-                : item.ingrediente;
+  // 🔹 Cargar datos al editar receta
+  useEffect(() => {
+    if (modo === "editar" && id) {
+      apiFetch(`recetas/${id}/`)
+        .then((data) => {
+          setNombre(data.nombre || "");
+          setDescripcion(data.descripcion || "");
+          setTiempo(data.tiempo_preparacion || "");
+          setInstrucciones(data.instrucciones || "");
+          setCategoriaNutricional(data.categoria_nutricional || "");
+          setImagenExistente(data.imagen || "");
 
-            const ingrNombre =
-              item.ingrediente_nombre ||
-              (typeof item.ingrediente === "object"
-                ? item.ingrediente?.nombre
-                : "") ||
-              "";
+          // ✅ Normalizar ingredientes del backend -> formato que usa IngredientesList
+          if (Array.isArray(data.ingredientes)) {
+            const normalizados = data.ingredientes.map((item) => {
+              const ingrId =
+                typeof item.ingrediente === "object"
+                  ? item.ingrediente?.id
+                  : item.ingrediente;
 
-            const unidadId =
-              typeof item.unidad === "object"
-                ? item.unidad?.id
-                : item.unidad ?? null;
+              const ingrNombre =
+                item.ingrediente_nombre ||
+                (typeof item.ingrediente === "object"
+                  ? item.ingrediente?.nombre
+                  : "") ||
+                "";
 
-            return {
-              ingrediente: { id: ingrId, nombre: ingrNombre }, // 👈 nombre asegurado
-              cantidad: item.cantidad ?? "",
-              unidad: unidadId,
-            };
-          });
+              const unidadId =
+                typeof item.unidad === "object"
+                  ? item.unidad?.id
+                  : item.unidad ?? null;
 
-          console.log("✅ Ingredientes cargados:", normalizados);
-          setIngredientes(normalizados);
-        } else {
-          setIngredientes([]);
-        }
-      })
-      .catch((err) => {
-        console.error("❌ Error cargando receta:", err);
-      });
-  }
-}, [modo, id]);
+              return {
+                ingrediente: { id: ingrId, nombre: ingrNombre },
+                cantidad: item.cantidad ?? "",
+                unidad: unidadId,
+              };
+            });
 
-
-
+            console.log("✅ Ingredientes cargados:", normalizados);
+            setIngredientes(normalizados);
+          } else {
+            setIngredientes([]);
+          }
+        })
+        .catch((err) => {
+          console.error("❌ Error cargando receta:", err);
+        });
+    }
+  }, [modo, id]);
 
   // 🔹 Guardar receta
   const handleSubmit = async (e) => {
@@ -153,7 +162,9 @@ useEffect(() => {
       </h2>
 
       {mensaje && (
-        <p className="text-center text-sm font-medium text-gray-600">{mensaje}</p>
+        <p className="text-center text-sm font-medium text-gray-600">
+          {mensaje}
+        </p>
       )}
 
       {/* Nombre */}
@@ -270,6 +281,41 @@ useEffect(() => {
           ? "Guardar cambios"
           : "Guardar receta"}
       </button>
+
+      {/* Sugerir ingrediente faltante */}
+      <div className="mt-6 border border-dashed border-gray-200 rounded-xl p-4 bg-[#FAF8F6]">
+        <p className="text-sm text-gray-600 mb-2">
+          ¿Te falta algún ingrediente que no aparece en la lista? Escríbemelo y
+          lo añadiré enseguida.
+        </p>
+
+        <textarea
+          value={sugerencia}
+          onChange={(e) => setSugerencia(e.target.value)}
+          rows="2"
+          placeholder="Ej: Levadura fresca, salsa tamari, harina integral de espelta…"
+          className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B5CF6] bg-white"
+        />
+
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-xs text-gray-400">
+            Se enviará un email a{" "}
+            <span className="font-medium">{correoSoporte}</span>
+          </span>
+          <button
+            type="button"
+            onClick={handleEnviarSugerencia}
+            disabled={!sugerencia.trim()}
+            className={`px-4 py-2 rounded-lg text-sm font-medium text-white transition ${
+              sugerencia.trim()
+                ? "bg-[#8B5CF6] hover:bg-[#7C3AED]"
+                : "bg-[#C4B5FD] cursor-not-allowed"
+            }`}
+          >
+            Enviar sugerencia
+          </button>
+        </div>
+      </div>
     </form>
   );
 }
