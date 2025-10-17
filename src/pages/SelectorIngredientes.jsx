@@ -1,6 +1,8 @@
+// src/pages/SelectorIngredientes.jsx
 import { useState, useEffect, useMemo } from "react";
 import { fetchIngredientes } from "../services/api";
 
+// 🔹 Etiquetas legibles
 const CATEGORIA_LABEL = {
   frutas_verduras: "Frutas y verduras",
   carnes_charcuteria: "Carnes y charcutería",
@@ -16,6 +18,24 @@ const CATEGORIA_LABEL = {
   desayunos_cereales: "Desayunos y cereales",
   conservas_caldos: "Conservas y caldos",
   otros: "Otros",
+};
+
+// 🔸 Iconos por categoría (Font Awesome)
+const CATEGORIA_ICONO = {
+  frutas_verduras: "fa-solid fa-apple-whole",
+  carnes_charcuteria: "fa-solid fa-drumstick-bite",
+  pescados_marisco: "fa-solid fa-fish",
+  aceites_especias_salsas: "fa-solid fa-bottle-droplet",
+  arroz_legumbres_pasta: "fa-solid fa-bowl-rice",
+  dulces: "fa-solid fa-candy-cane",
+  snacks: "fa-solid fa-cookie-bite",
+  panaderia: "fa-solid fa-bread-slice",
+  lacteos: "fa-solid fa-cheese",
+  bebidas: "fa-solid fa-mug-saucer",
+  congelados: "fa-solid fa-snowflake",
+  desayunos_cereales: "fa-solid fa-seedling",
+  conservas_caldos: "fa-solid fa-jar",
+  otros: "fa-solid fa-box",
 };
 
 export default function SelectorIngredientes({ onSelect }) {
@@ -43,6 +63,9 @@ export default function SelectorIngredientes({ onSelect }) {
     return ingredientes.filter((i) => i.nombre.toLowerCase().includes(q));
   }, [ingredientes, search]);
 
+  const iconoCategoria = (categoria) =>
+    CATEGORIA_ICONO[categoria] || CATEGORIA_ICONO.otros;
+
   return (
     <div>
       <div className="sticky top-0 bg-white pb-3 z-10">
@@ -63,11 +86,11 @@ export default function SelectorIngredientes({ onSelect }) {
               onClick={() => onSelect(ing)}
               className="flex flex-col items-center text-center bg-white rounded-xl p-3 shadow-sm hover:shadow-md transition"
             >
-              <img
-                src={ing.icono || "/placeholder.png"}
-                alt={ing.nombre}
-                className="w-12 h-12 object-contain mb-2"
-              />
+              <i
+                className={`${iconoCategoria(
+                  ing.categoria
+                )} text-3xl text-[#8B5CF6] mb-2`}
+              ></i>
               <span className="text-sm text-gray-700">{ing.nombre}</span>
             </button>
           ))}
@@ -83,11 +106,11 @@ export default function SelectorIngredientes({ onSelect }) {
                   onClick={() => onSelect(ing)}
                   className="flex flex-col items-center text-center bg-white rounded-xl p-3 shadow-sm hover:shadow-md transition"
                 >
-                  <img
-                    src={ing.icono || "/placeholder.png"}
-                    alt={ing.nombre}
-                    className="w-12 h-12 object-contain mb-2"
-                  />
+                  <i
+                    className={`${iconoCategoria(
+                      ing.categoria
+                    )} text-3xl text-[#8B5CF6] mb-2`}
+                  ></i>
                   <span className="text-sm text-gray-700">{ing.nombre}</span>
                 </button>
               ))}
