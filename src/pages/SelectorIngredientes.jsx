@@ -54,9 +54,17 @@ export default function SelectorIngredientes() {
     return ingredientes.filter((i) => i.nombre.toLowerCase().includes(q));
   }, [ingredientes, search]);
 
-  const handleSelect = (ing) => {
-    // Volver a la ruta de origen PASANDO el ingrediente por state
-    navigate(returnTo, { state: { selectedIngredient: ing } });
+    const handleSelect = (ing) => {
+        const currentList = location.state?.currentList || [];
+        const updatedList = [
+            ...currentList,
+            { cantidad: "", unidad: null, ingrediente: ing },
+        ];
+
+        navigate(returnTo, { state: { selectedList: updatedList } });
+        };
+
+
   };
 
   return (
@@ -115,4 +123,4 @@ export default function SelectorIngredientes() {
       )}
     </div>
   );
-}
+

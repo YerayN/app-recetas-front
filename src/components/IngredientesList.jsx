@@ -10,23 +10,18 @@ export default function IngredientesList({ value = [], onChange }) {
 
   // 🔹 Sincronizar prop -> estado local
   useEffect(() => {
-    const selected = location.state?.selectedIngredient;
-    if (!selected) return;
+    const selectedList = location.state?.selectedList;
+    if (!selectedList) return;
 
-    setIngredientes((prev) => {
-      const newList = [
-        ...prev,
-        { cantidad: "", unidad: null, ingrediente: selected },
-      ];
-      onChange(newList);
-      return newList;
-    });
+    setIngredientes(selectedList);
+    onChange(selectedList);
 
     setTimeout(() => {
       navigate(location.pathname, { replace: true, state: null });
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     }, 100);
   }, [location.state, navigate, location.pathname, onChange]);
+
 
 
   // 🔹 Eliminar ingrediente
@@ -52,7 +47,7 @@ export default function IngredientesList({ value = [], onChange }) {
   // 🔹 Abrir selector y pasar a qué ruta debe volver
   const openSelector = () => {
     navigate("/ingredientes/seleccionar", {
-      state: { returnTo: location.pathname },
+      state: { returnTo: location.pathname, currentList: ingredientes },
     });
   };
 
