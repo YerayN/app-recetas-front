@@ -13,44 +13,43 @@ export default function IngredientesList({ value = [], onChange }) {
   }, [value]);
 
   // 🔎 Al volver del selector: aplicar acción sobre el estado ACTUAL (no snapshot)
+
   useEffect(() => {
-    const selectedIng = location.state?.selectedIngredient;
+    const st = location.state || {};
+    const selectedList = st.selectedList;
+    const selectedIngredient = st.selectedIngredient;
     const replaceIndex =
-      typeof location.state?.replaceIndex === "number"
-        ? location.state.replaceIndex
-        : null;
+      typeof st.replaceIndex === "number" ? st.replaceIndex : null;
 
-    if (!selectedIng) return;
+    // 🔹 Caso preferido: viene la lista completa creada en el selector
+    if (Array.isArray(selectedList)) {
+      setIngredientes(selectedList);
+      onChange(selectedList);
+      // ❗️NO limpies el state aquí: deja que lo limpie RecetaForm para evitar condiciones de carrera
+      return;
+    }
 
-    setIngredientes((prev) => {
-      let newList = [...prev];
+    // 🔹 Compatibilidad: por si viniera solo el ingrediente
+    if (selectedIngredient) {
+      setIngredientes((prev) => {
+        const newList = [...prev];
+        if (
+          replaceIndex !== null &&
+          replaceIndex >= 0 &&
+          replaceIndex < newList.length
+        ) {
+          const prevItem = newList[replaceIndex] || {};
+          newList[replaceIndex] = { ...prevItem, ingrediente: selectedIngredient };
+        } else {
+          newList.push({ cantidad: "", unidad: null, ingrediente: selectedIngredient });
+        }
+        onChange(newList);
+        return newList;
+      });
+      return;
+    }
+  }, [location.state, onChange]);
 
-      if (
-        replaceIndex !== null &&
-        replaceIndex >= 0 &&
-        replaceIndex < newList.length
-      ) {
-        // Reemplazar en la misma fila (conserva cantidad/unidad actuales)
-        const prevItem = newList[replaceIndex] || {};
-        newList[replaceIndex] = {
-          ...prevItem,
-          ingrediente: selectedIng,
-        };
-      } else {
-        // Añadir nueva fila
-        newList.push({ cantidad: "", unidad: null, ingrediente: selectedIng });
-      }
-
-      onChange(newList);
-      return newList;
-    });
-
-    // 🔥 Limpia el state de navegación inmediatamente para no reinyectar datos viejos
-    navigate(location.pathname, { replace: true, state: null });
-
-    // (opcional) desplaza al final
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-  }, [location.state, navigate, location.pathname, onChange]);
 
   // 🚪 Abrir selector: si pasas índice → modo "reemplazar"; si no → "añadir"
   const openSelector = (replaceIndex = null) => {
