@@ -37,6 +37,23 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
     window.location.href = mailto;
   };
 
+  // 🧹 Reiniciar formulario al entrar en modo "crear"
+  useEffect(() => {
+    if (modo === "crear") {
+      setNombre("");
+      setDescripcion("");
+      setTiempo("");
+      setInstrucciones("");
+      setCategoriaNutricional("");
+      setIngredientes([]);
+      setImagen(null);
+      setImagenExistente("");
+      setMensaje("");
+      setSugerencia("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [modo, id]);
+
   // 🔹 Cargar datos al editar receta
   useEffect(() => {
     if (modo === "editar" && id) {
