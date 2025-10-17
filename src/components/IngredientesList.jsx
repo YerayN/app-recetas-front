@@ -8,46 +8,54 @@ export default function IngredientesList({ value = [], onChange }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // sincroniza props -> estado interno
+  // 🔹 Sincronizar prop -> estado local
   useEffect(() => {
     setIngredientes(value || []);
   }, [value]);
 
-  // ✅ recoger ingrediente devuelto desde el selector
+  // 🔹 Recibir ingrediente seleccionado desde el selector visual
   useEffect(() => {
     const selected = location.state?.selectedIngredient;
     if (!selected) return;
 
-    const newList = [
-      ...ingredientes,
-      { cantidad: "", unidad: null, ingrediente: selected },
-    ];
-    setIngredientes(newList);
-    onChange(newList);
+    // ✅ Usamos versión funcional para no perder ingredientes previos
+    setIngredientes((prev) => {
+      const newList = [
+        ...prev,
+        { cantidad: "", unidad: null, ingrediente: selected },
+      ];
+      onChange(newList);
+      return newList;
+    });
 
-    // limpiar el state para evitar repetición en siguientes renders
-    navigate(location.pathname, { replace: true, state: null });
+    // Limpieza y scroll suave al final
+    setTimeout(() => {
+      navigate(location.pathname, { replace: true, state: null });
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }, 100);
+  }, [location.state, navigate, location.pathname, onChange]);
 
-    // (opcional) scroll al final para que se vea la nueva fila
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state]); // se dispara al volver con state
-
+  // 🔹 Eliminar ingrediente
   const handleRemove = (index) => {
-    const newList = ingredientes.filter((_, i) => i !== index);
-    setIngredientes(newList);
-    onChange(newList);
+    setIngredientes((prev) => {
+      const newList = prev.filter((_, i) => i !== index);
+      onChange(newList);
+      return newList;
+    });
   };
 
+  // 🔹 Cambiar valor de cantidad/unidad/ingrediente
   const handleChange = (index, key, newValue) => {
-    const newList = ingredientes.map((item, i) =>
-      i === index ? { ...item, [key]: newValue } : item
-    );
-    setIngredientes(newList);
-    onChange(newList);
+    setIngredientes((prev) => {
+      const newList = prev.map((item, i) =>
+        i === index ? { ...item, [key]: newValue } : item
+      );
+      onChange(newList);
+      return newList;
+    });
   };
 
-  // 🔗 abrir selector pasando a qué ruta debe volver
+  // 🔹 Abrir selector y pasar a qué ruta debe volver
   const openSelector = () => {
     navigate("/ingredientes/seleccionar", {
       state: { returnTo: location.pathname },
@@ -114,7 +122,7 @@ export default function IngredientesList({ value = [], onChange }) {
         </div>
       ))}
 
-      {/* Añadir nuevo ingrediente → abre el selector visual */}
+      {/* Botón principal → abre el selector visual */}
       <button
         type="button"
         onClick={openSelector}
