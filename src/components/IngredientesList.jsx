@@ -17,14 +17,17 @@ export default function IngredientesList({ value = [], onChange }) {
     const selectedList = location.state?.selectedList;
     if (!selectedList) return;
 
+    // ✅ Actualiza lista y comunica al padre
     setIngredientes(selectedList);
     onChange(selectedList);
 
-    setTimeout(() => {
-      navigate(location.pathname, { replace: true, state: null });
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-    }, 100);
+    // ✅ Limpia el state inmediatamente tras usarlo
+    navigate(location.pathname, { replace: true, state: null });
+
+    // ✅ (opcional) Desplaza al final
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   }, [location.state, navigate, location.pathname, onChange]);
+
 
 
 
