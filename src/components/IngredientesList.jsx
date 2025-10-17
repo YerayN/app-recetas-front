@@ -10,15 +10,9 @@ export default function IngredientesList({ value = [], onChange }) {
 
   // 🔹 Sincronizar prop -> estado local
   useEffect(() => {
-    setIngredientes(value || []);
-  }, [value]);
-
-  // 🔹 Recibir ingrediente seleccionado desde el selector visual
-  useEffect(() => {
     const selected = location.state?.selectedIngredient;
     if (!selected) return;
 
-    // ✅ Usamos versión funcional para no perder ingredientes previos
     setIngredientes((prev) => {
       const newList = [
         ...prev,
@@ -28,12 +22,12 @@ export default function IngredientesList({ value = [], onChange }) {
       return newList;
     });
 
-    // Limpieza y scroll suave al final
     setTimeout(() => {
       navigate(location.pathname, { replace: true, state: null });
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     }, 100);
   }, [location.state, navigate, location.pathname, onChange]);
+
 
   // 🔹 Eliminar ingrediente
   const handleRemove = (index) => {

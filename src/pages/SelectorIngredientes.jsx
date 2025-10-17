@@ -1,40 +1,63 @@
 // src/pages/SelectorIngredientes.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchIngredientes } from "../services/api";
 
+// Mapa local con los mismos choices que en el modelo (códigos -> labels)
+const CATEGORIA_LABEL = {
+  frutas_verduras: "Frutas y verduras",
+  carnes_charcuteria: "Carnes y charcutería",
+  pescados_marisco: "Pescados y marisco",
+  aceites_especias_salsas: "Aceites, especias y salsas",
+  arroz_legumbres_pasta: "Arroz, legumbres y pasta",
+  dulces: "Dulces",
+  snacks: "Snacks y frutos secos",
+  panaderia: "Panadería",
+  lacteos: "Lácteos",
+  bebidas: "Bebidas",
+  congelados: "Congelados",
+  desayunos_cereales: "Desayunos y cereales",
+  conservas_caldos: "Conservas y caldos",
+  otros: "Otros",
+};
+
 export default function SelectorIngredientes() {
   const [ingredientes, setIngredientes] = useState([]);
-  const [categorias, setCategorias] = useState({});
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
-  const returnTo = location.state?.returnTo || "/recetas/nueva"; // fallback
+  // De dónde venimos (por defecto, la pantalla de nueva receta)
+  const returnTo = location.state?.returnTo || "/recetas/nueva";
 
-  // Cargar ingredientes desde la API
+  // Cargar ingredientes (puedes cambiar a búsqueda por API si prefieres)
   useEffect(() => {
     fetchIngredientes("")
-      .then((data) => {
-        setIngredientes(data);
-        const grouped = data.reduce((acc, ing) => {
-          const cat = ing.categoria?.nombre || ing.categoria || "Otros";
-          acc[cat] = acc[cat] ? [...acc[cat], ing] : [ing];
-          return acc;
-        }, {});
-        setCategorias(grouped);
-      })
+      .then((data) => setIngredientes(Array.isArray(data) ? data : []))
       .catch((err) => console.error("Error cargando ingredientes:", err));
   }, []);
 
+  // Agrupar por categoría (con label)
+  const categorias = useMemo(() => {
+    return ingredientes.reduce((acc, ing) => {
+      const key = ing.categoria || "otros"; // viene como código
+      const label = CATEGORIA_LABEL[key] || "Otros";
+      if (!acc[label]) acc[label] = [];
+      acc[label].push(ing);
+      return acc;
+    }, {});
+  }, [ingredientes]);
+
+  // Filtrado en vivo
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return ingredientes.filter((i) => i.nombre.toLowerCase().includes(q));
+  }, [ingredientes, search]);
+
   const handleSelect = (ing) => {
-    // ✅ volver a la ruta de origen pasando el ingrediente seleccionado
+    // Volver a la ruta de origen PASANDO el ingrediente por state
     navigate(returnTo, { state: { selectedIngredient: ing } });
   };
-
-  const filtered = ingredientes.filter((i) =>
-    i.nombre.toLowerCase().includes(search.toLowerCase())
-  );
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] p-4">
@@ -42,7 +65,7 @@ export default function SelectorIngredientes() {
       <div className="sticky top-0 bg-[#FAF8F6] pb-3 z-10">
         <input
           type="text"
-          placeholder="Buscar ingrediente..."
+          placeholder="Buscar ingrediente…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full border border-gray-300 rounded-full p-3 pl-4 focus:ring-2 focus:ring-[#8B5CF6]"
@@ -68,9 +91,9 @@ export default function SelectorIngredientes() {
           ))}
         </div>
       ) : (
-        Object.entries(categorias).map(([cat, items]) => (
-          <div key={cat} className="mt-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">{cat}</h2>
+        Object.entries(categorias).map(([label, items]) => (
+          <div key={label} className="mt-6">
+            <h2 className="text-lg font-semibold text-gray-700 mb-2">{label}</h2>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
               {items.map((ing) => (
                 <button
