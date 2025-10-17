@@ -286,22 +286,57 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
           />
         </div>
 
-        {/* Botón guardar */}
-        <button
-          type="submit"
-          disabled={subiendo}
-          className={`w-full py-3 rounded-xl font-medium transition text-white ${
-            subiendo
-              ? "bg-[#A8BDA8]/60 cursor-not-allowed"
-              : "bg-[#8B5CF6] hover:bg-[#7C3AED]"
-          }`}
-        >
-          {subiendo
-            ? "Guardando..."
-            : modo === "editar"
-            ? "Guardar cambios"
-            : "Guardar receta"}
-        </button>
+          {/* Botón guardar */}
+          <button
+            type="submit"
+            disabled={subiendo}
+            className={`w-full py-3 rounded-xl font-medium transition text-white ${
+              subiendo
+                ? "bg-[#A8BDA8]/60 cursor-not-allowed"
+                : "bg-[#8B5CF6] hover:bg-[#7C3AED]"
+            }`}
+          >
+            {subiendo
+              ? "Guardando..."
+              : modo === "editar"
+              ? "Guardar cambios"
+              : "Guardar receta"}
+          </button>
+
+          {/* 💌 Sugerir ingrediente faltante */}
+          <div className="mt-6 border border-dashed border-gray-200 rounded-xl p-4 bg-[#FAF8F6]">
+            <p className="text-sm text-gray-600 mb-2">
+              ¿Te falta algún ingrediente que no aparece en la lista? Escríbemelo y
+              lo añadiré enseguida.
+            </p>
+
+            <textarea
+              value={sugerencia}
+              onChange={(e) => setSugerencia(e.target.value)}
+              rows="2"
+              placeholder="Ej: Levadura fresca, salsa tamari, harina integral de espelta…"
+              className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B5CF6] bg-white"
+            />
+
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs text-gray-400">
+                Se abrirá tu correo para enviarme la sugerencia.
+              </span>
+              <button
+                type="button"
+                onClick={handleEnviarSugerencia}
+                disabled={!sugerencia.trim()}
+                className={`px-4 py-2 rounded-lg text-sm font-medium text-white transition ${
+                  sugerencia.trim()
+                    ? "bg-[#8B5CF6] hover:bg-[#7C3AED]"
+                    : "bg-[#C4B5FD] cursor-not-allowed"
+                }`}
+              >
+                Enviar sugerencia
+              </button>
+            </div>
+          </div>
+
       </form>
 
       {/* Modal selector */}
