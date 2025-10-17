@@ -8,31 +8,30 @@ export default function IngredientesList({ value = [], onChange }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 👇 sincroniza el estado interno cuando cambie la prop value
+  // sincroniza props -> estado interno
   useEffect(() => {
     setIngredientes(value || []);
   }, [value]);
 
-  // 🔹 Detectar si se ha vuelto desde el selector visual con un ingrediente
+  // ✅ recoger ingrediente devuelto desde el selector
   useEffect(() => {
     const selected = location.state?.selectedIngredient;
-    if (selected) {
-      const newList = [
-        ...ingredientes,
-        { cantidad: "", unidad: null, ingrediente: selected },
-      ];
-      setIngredientes(newList);
-      onChange(newList);
+    if (!selected) return;
 
-      // 🧹 limpiar estado y hacer scroll al final
-      setTimeout(() => {
-        navigate(location.pathname, { replace: true, state: {} });
-        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-      }, 100);
-    }
-  }, [location.key]);
+    const newList = [
+      ...ingredientes,
+      { cantidad: "", unidad: null, ingrediente: selected },
+    ];
+    setIngredientes(newList);
+    onChange(newList);
 
+    // limpiar el state para evitar repetición en siguientes renders
+    navigate(location.pathname, { replace: true, state: null });
 
+    // (opcional) scroll al final para que se vea la nueva fila
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]); // se dispara al volver con state
 
   const handleRemove = (index) => {
     const newList = ingredientes.filter((_, i) => i !== index);
@@ -46,6 +45,13 @@ export default function IngredientesList({ value = [], onChange }) {
     );
     setIngredientes(newList);
     onChange(newList);
+  };
+
+  // 🔗 abrir selector pasando a qué ruta debe volver
+  const openSelector = () => {
+    navigate("/ingredientes/seleccionar", {
+      state: { returnTo: location.pathname },
+    });
   };
 
   return (
@@ -73,7 +79,7 @@ export default function IngredientesList({ value = [], onChange }) {
             />
           </div>
 
-          {/* Ingrediente (solo visible si ya hay uno seleccionado) */}
+          {/* Ingrediente */}
           <div className="flex-1">
             {item.ingrediente ? (
               <div className="flex items-center justify-between border rounded-md p-2 bg-gray-50">
@@ -81,9 +87,7 @@ export default function IngredientesList({ value = [], onChange }) {
                   {item.ingrediente.nombre || "Ingrediente sin nombre"}
                 </span>
                 <button
-                  onClick={() =>
-                    handleChange(index, "ingrediente", null)
-                  }
+                  onClick={() => handleChange(index, "ingrediente", null)}
                   className="text-red-500 hover:text-red-700 text-sm font-medium"
                 >
                   Cambiar
@@ -92,7 +96,7 @@ export default function IngredientesList({ value = [], onChange }) {
             ) : (
               <button
                 type="button"
-                onClick={() => navigate("/ingredientes/seleccionar")}
+                onClick={openSelector}
                 className="w-full border border-dashed border-gray-300 rounded-md p-2 text-gray-500 hover:bg-gray-100 transition"
               >
                 + Seleccionar ingrediente
@@ -113,7 +117,7 @@ export default function IngredientesList({ value = [], onChange }) {
       {/* Añadir nuevo ingrediente → abre el selector visual */}
       <button
         type="button"
-        onClick={() => navigate("/ingredientes/seleccionar")}
+        onClick={openSelector}
         className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
       >
         + Añadir ingrediente

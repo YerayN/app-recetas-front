@@ -1,6 +1,6 @@
 // src/pages/SelectorIngredientes.jsx
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { fetchIngredientes } from "../services/api";
 
 export default function SelectorIngredientes() {
@@ -8,15 +8,17 @@ export default function SelectorIngredientes() {
   const [categorias, setCategorias] = useState({});
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // 🔹 Cargar ingredientes desde la API
+  const returnTo = location.state?.returnTo || "/recetas/nueva"; // fallback
+
+  // Cargar ingredientes desde la API
   useEffect(() => {
     fetchIngredientes("")
       .then((data) => {
         setIngredientes(data);
-        // Agrupar por categoría
         const grouped = data.reduce((acc, ing) => {
-          const cat = ing.categoria?.nombre || "Otros";
+          const cat = ing.categoria?.nombre || ing.categoria || "Otros";
           acc[cat] = acc[cat] ? [...acc[cat], ing] : [ing];
           return acc;
         }, {});
@@ -26,7 +28,8 @@ export default function SelectorIngredientes() {
   }, []);
 
   const handleSelect = (ing) => {
-    navigate(-1, { state: { selectedIngredient: ing } });
+    // ✅ volver a la ruta de origen pasando el ingrediente seleccionado
+    navigate(returnTo, { state: { selectedIngredient: ing } });
   };
 
   const filtered = ingredientes.filter((i) =>
@@ -35,7 +38,7 @@ export default function SelectorIngredientes() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] p-4">
-      {/* 🔍 Buscador */}
+      {/* Buscador */}
       <div className="sticky top-0 bg-[#FAF8F6] pb-3 z-10">
         <input
           type="text"
@@ -46,7 +49,7 @@ export default function SelectorIngredientes() {
         />
       </div>
 
-      {/* 📦 Listado */}
+      {/* Listado */}
       {search ? (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 mt-4">
           {filtered.map((ing) => (
