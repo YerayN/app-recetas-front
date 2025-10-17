@@ -56,11 +56,22 @@ export default function IngredientesList({ value = [], onChange }) {
     navigate("/ingredientes/seleccionar", {
       state: {
         returnTo: location.pathname,
-        ingredientesActuales: ingredientes,  // 👈 pasa lista actual
+        ingredientesActuales: ingredientes,
         replaceIndex,
+        // 👇 nuevo: guardar snapshot completo del formulario
+        formState: {
+          nombre: document.querySelector('input[name="nombre"]')?.value || "",
+          descripcion: document.querySelector('textarea[name="descripcion"]')?.value || "",
+          tiempo: document.querySelector('input[type="number"]')?.value || "",
+          instrucciones: document.querySelector('textarea[name="instrucciones"]')?.value || "",
+          categoriaNutricional: document.querySelector('select')?.value || "",
+          imagenExistente: "", // opcional
+          ingredientes,
+        },
       },
     });
   };
+
 
 
   const handleRemove = (index) => {

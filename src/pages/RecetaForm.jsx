@@ -33,62 +33,75 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
     window.location.href = mailto;
   };
 
-  // 🔹 Cargar datos al editar receta
-  useEffect(() => {
-    // ✅ Si venimos del selector, usamos la lista modificada y limpiamos el state aquí
-    if (Array.isArray(location.state?.selectedList)) {
-      setIngredientes(location.state.selectedList);
-      navigate(location.pathname, { replace: true, state: null });
-      return;
-    }
+  // 🔹 Cargar o restaurar datos al montar o al volver del selector
+useEffect(() => {
+  // 👇 1. Si venimos del selector, recuperar el formulario completo
+  if (location.state?.formState) {
+    const f = location.state.formState;
+    setNombre(f.nombre || "");
+    setDescripcion(f.descripcion || "");
+    setTiempo(f.tiempo || "");
+    setInstrucciones(f.instrucciones || "");
+    setCategoriaNutricional(f.categoriaNutricional || "");
+    setImagenExistente(f.imagenExistente || "");
+    setIngredientes(f.ingredientes || []);
+    // limpiar el state para evitar bucles infinitos
+    navigate(location.pathname, { replace: true, state: null });
+    return;
+  }
 
-    // 🔄 Si no venimos del selector → cargar desde backend (solo edición)
-    if (modo === "editar" && id) {
-      apiFetch(`recetas/${id}/`)
-        .then((data) => {
-          setNombre(data.nombre || "");
-          setDescripcion(data.descripcion || "");
-          setTiempo(data.tiempo_preparacion || "");
-          setInstrucciones(data.instrucciones || "");
-          setCategoriaNutricional(data.categoria_nutricional || "");
-          setImagenExistente(data.imagen || "");
+  // 👇 2. Si venimos del selector con una nueva lista de ingredientes
+  if (Array.isArray(location.state?.selectedList)) {
+    setIngredientes(location.state.selectedList);
+    navigate(location.pathname, { replace: true, state: null });
+    return;
+  }
 
-          if (Array.isArray(data.ingredientes)) {
-            const normalizados = data.ingredientes.map((item) => {
-              const ingrId =
-                typeof item.ingrediente === "object"
-                  ? item.ingrediente?.id
-                  : item.ingrediente;
+  // 👇 3. Si estamos en edición normal → cargar desde backend
+  if (modo === "editar" && id) {
+    apiFetch(`recetas/${id}/`)
+      .then((data) => {
+        setNombre(data.nombre || "");
+        setDescripcion(data.descripcion || "");
+        setTiempo(data.tiempo_preparacion || "");
+        setInstrucciones(data.instrucciones || "");
+        setCategoriaNutricional(data.categoria_nutricional || "");
+        setImagenExistente(data.imagen || "");
 
-              const ingrNombre =
-                item.ingrediente_nombre ||
-                (typeof item.ingrediente === "object"
-                  ? item.ingrediente?.nombre
-                  : "") ||
-                "";
+        if (Array.isArray(data.ingredientes)) {
+          const normalizados = data.ingredientes.map((item) => {
+            const ingrId =
+              typeof item.ingrediente === "object"
+                ? item.ingrediente?.id
+                : item.ingrediente;
 
-              const unidadId =
-                typeof item.unidad === "object"
-                  ? item.unidad?.id
-                  : item.unidad ?? null;
+            const ingrNombre =
+              item.ingrediente_nombre ||
+              (typeof item.ingrediente === "object"
+                ? item.ingrediente?.nombre
+                : "") ||
+              "";
 
-              return {
-                ingrediente: { id: ingrId, nombre: ingrNombre },
-                cantidad: item.cantidad ?? "",
-                unidad: unidadId,
-              };
-            });
+            const unidadId =
+              typeof item.unidad === "object"
+                ? item.unidad?.id
+                : item.unidad ?? null;
 
-            setIngredientes(normalizados);
-          } else {
-            setIngredientes([]);
-          }
-        })
-        .catch((err) => {
-          console.error("❌ Error cargando receta:", err);
-        });
-    }
-  }, [modo, id, location.state, navigate, location.pathname]);
+            return {
+              ingrediente: { id: ingrId, nombre: ingrNombre },
+              cantidad: item.cantidad ?? "",
+              unidad: unidadId,
+            };
+          });
+          setIngredientes(normalizados);
+        } else {
+          setIngredientes([]);
+        }
+      })
+      .catch((err) => console.error("❌ Error cargando receta:", err));
+  }
+}, [modo, id, location.state, navigate, location.pathname]);
+
 
 
   // 🔹 Guardar receta
