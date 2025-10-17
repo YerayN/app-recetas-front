@@ -1,9 +1,6 @@
-// src/pages/SelectorIngredientes.jsx
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { fetchIngredientes } from "../services/api";
 
-// Mapa local con los mismos choices que en el modelo (códigos -> labels)
 const CATEGORIA_LABEL = {
   frutas_verduras: "Frutas y verduras",
   carnes_charcuteria: "Carnes y charcutería",
@@ -21,25 +18,16 @@ const CATEGORIA_LABEL = {
   otros: "Otros",
 };
 
-export default function SelectorIngredientes() {
+export default function SelectorIngredientes({ onSelect }) {
   const [ingredientes, setIngredientes] = useState([]);
   const [search, setSearch] = useState("");
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  // 🔙 Datos del estado de navegación
-  const returnTo = location.state?.returnTo || "/recetas/nueva";
-  const replaceIndex = location.state?.replaceIndex ?? null;
-  const ingredientesActuales = location.state?.ingredientesActuales || [];
-
-  // 🔹 Cargar ingredientes desde la API
   useEffect(() => {
     fetchIngredientes("")
       .then((data) => setIngredientes(Array.isArray(data) ? data : []))
       .catch((err) => console.error("Error cargando ingredientes:", err));
   }, []);
 
-  // 🔹 Agrupar por categoría
   const categorias = useMemo(() => {
     return ingredientes.reduce((acc, ing) => {
       const key = ing.categoria || "otros";
@@ -50,37 +38,14 @@ export default function SelectorIngredientes() {
     }, {});
   }, [ingredientes]);
 
-  // 🔹 Filtrado en vivo
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return ingredientes.filter((i) => i.nombre.toLowerCase().includes(q));
   }, [ingredientes, search]);
 
-  // ✅ Seleccionar ingrediente → crear nueva lista actualizada
-  const handleSelect = (ing) => {
-    const updatedList = [...ingredientesActuales];
-
-    if (
-      replaceIndex !== null &&
-      replaceIndex >= 0 &&
-      replaceIndex < updatedList.length
-    ) {
-      // Reemplazar ingrediente en su posición original
-      const prevItem = updatedList[replaceIndex] || {};
-      updatedList[replaceIndex] = { ...prevItem, ingrediente: ing };
-    } else {
-      // Añadir nuevo ingrediente
-      updatedList.push({ cantidad: "", unidad: null, ingrediente: ing });
-    }
-
-    // 🔁 Volver a la página de origen con la lista actualizada
-    navigate(returnTo, { state: { selectedList: updatedList } });
-  };
-
   return (
-    <div className="min-h-screen bg-[#FAF8F6] p-4">
-      {/* Buscador */}
-      <div className="sticky top-0 bg-[#FAF8F6] pb-3 z-10">
+    <div>
+      <div className="sticky top-0 bg-white pb-3 z-10">
         <input
           type="text"
           placeholder="Buscar ingrediente…"
@@ -90,13 +55,12 @@ export default function SelectorIngredientes() {
         />
       </div>
 
-      {/* Listado */}
       {search ? (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 mt-4">
           {filtered.map((ing) => (
             <button
               key={ing.id}
-              onClick={() => handleSelect(ing)}
+              onClick={() => onSelect(ing)}
               className="flex flex-col items-center text-center bg-white rounded-xl p-3 shadow-sm hover:shadow-md transition"
             >
               <img
@@ -116,7 +80,7 @@ export default function SelectorIngredientes() {
               {items.map((ing) => (
                 <button
                   key={ing.id}
-                  onClick={() => handleSelect(ing)}
+                  onClick={() => onSelect(ing)}
                   className="flex flex-col items-center text-center bg-white rounded-xl p-3 shadow-sm hover:shadow-md transition"
                 >
                   <img
