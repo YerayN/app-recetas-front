@@ -55,13 +55,14 @@ export default function SelectorIngredientes() {
   }, [ingredientes, search]);
 
 const handleSelect = (ing) => {
-  const currentList = location.state?.currentList || [];
-  const updatedList = [
-    ...currentList,
-    { cantidad: "", unidad: null, ingrediente: ing },
-  ];
+  const replaceIndex =
+    typeof location.state?.replaceIndex === "number"
+      ? location.state.replaceIndex
+      : null;
 
-  navigate(returnTo, { state: { selectedList: updatedList } });
+  navigate(returnTo, {
+    state: { selectedIngredient: ing, replaceIndex },
+  });
 };
 
 

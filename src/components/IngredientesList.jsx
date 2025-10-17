@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import UnitsSelect from "./UnitsSelect";
-import IngredienteAutocomplete from "./IngredienteAutocomplete";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export default function IngredientesList({ value = [], onChange }) {
@@ -8,31 +7,58 @@ export default function IngredientesList({ value = [], onChange }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 🔹 Sincronizar prop -> estado local
+  // 🔄 Mantén sincronizado el estado interno con la prop del padre
   useEffect(() => {
     setIngredientes(value || []);
   }, [value]);
 
+  // 🔎 Al volver del selector: aplicar acción sobre el estado ACTUAL (no snapshot)
   useEffect(() => {
-    const selectedList = location.state?.selectedList;
-    if (!selectedList) return;
+    const selectedIng = location.state?.selectedIngredient;
+    const replaceIndex =
+      typeof location.state?.replaceIndex === "number"
+        ? location.state.replaceIndex
+        : null;
 
-    // ✅ Actualiza lista y comunica al padre
-    setIngredientes(selectedList);
-    onChange(selectedList);
+    if (!selectedIng) return;
 
-    // ✅ Limpia el state inmediatamente tras usarlo
+    setIngredientes((prev) => {
+      let newList = [...prev];
+
+      if (
+        replaceIndex !== null &&
+        replaceIndex >= 0 &&
+        replaceIndex < newList.length
+      ) {
+        // Reemplazar en la misma fila (conserva cantidad/unidad actuales)
+        const prevItem = newList[replaceIndex] || {};
+        newList[replaceIndex] = {
+          ...prevItem,
+          ingrediente: selectedIng,
+        };
+      } else {
+        // Añadir nueva fila
+        newList.push({ cantidad: "", unidad: null, ingrediente: selectedIng });
+      }
+
+      onChange(newList);
+      return newList;
+    });
+
+    // 🔥 Limpia el state de navegación inmediatamente para no reinyectar datos viejos
     navigate(location.pathname, { replace: true, state: null });
 
-    // ✅ (opcional) Desplaza al final
+    // (opcional) desplaza al final
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   }, [location.state, navigate, location.pathname, onChange]);
 
+  // 🚪 Abrir selector: si pasas índice → modo "reemplazar"; si no → "añadir"
+  const openSelector = (replaceIndex = null) => {
+    navigate("/ingredientes/seleccionar", {
+      state: { returnTo: location.pathname, replaceIndex },
+    });
+  };
 
-
-
-
-  // 🔹 Eliminar ingrediente
   const handleRemove = (index) => {
     setIngredientes((prev) => {
       const newList = prev.filter((_, i) => i !== index);
@@ -41,7 +67,6 @@ export default function IngredientesList({ value = [], onChange }) {
     });
   };
 
-  // 🔹 Cambiar valor de cantidad/unidad/ingrediente
   const handleChange = (index, key, newValue) => {
     setIngredientes((prev) => {
       const newList = prev.map((item, i) =>
@@ -49,13 +74,6 @@ export default function IngredientesList({ value = [], onChange }) {
       );
       onChange(newList);
       return newList;
-    });
-  };
-
-  // 🔹 Abrir selector y pasar a qué ruta debe volver
-  const openSelector = () => {
-    navigate("/ingredientes/seleccionar", {
-      state: { returnTo: location.pathname, currentList: ingredientes },
     });
   };
 
@@ -91,38 +109,43 @@ export default function IngredientesList({ value = [], onChange }) {
                 <span className="text-gray-700">
                   {item.ingrediente.nombre || "Ingrediente sin nombre"}
                 </span>
-                <button
-                  onClick={() => handleChange(index, "ingrediente", null)}
-                  className="text-red-500 hover:text-red-700 text-sm font-medium"
-                >
-                  Cambiar
-                </button>
+                <div className="flex gap-2">
+                  {/* 🔁 Cambiar → abre selector en modo REEMPLAZO */}
+                  <button
+                    type="button"
+                    onClick={() => openSelector(index)}
+                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                  >
+                    Cambiar
+                  </button>
+                  {/* ❌ Quitar fila */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(index)}
+                    className="text-red-500 hover:text-red-700 text-sm font-medium"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </div>
             ) : (
+              // Si por lo que sea hubiera una fila sin ingrediente, permite seleccionarlo
               <button
                 type="button"
-                onClick={openSelector}
+                onClick={() => openSelector(index)}
                 className="w-full border border-dashed border-gray-300 rounded-md p-2 text-gray-500 hover:bg-gray-100 transition"
               >
                 + Seleccionar ingrediente
               </button>
             )}
           </div>
-
-          {/* Eliminar */}
-          <button
-            onClick={() => handleRemove(index)}
-            className="mt-4 sm:mt-0 bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-2 w-full sm:w-auto transition"
-          >
-            Eliminar
-          </button>
         </div>
       ))}
 
-      {/* Botón principal → abre el selector visual */}
+      {/* ➕ Añadir nueva fila */}
       <button
         type="button"
-        onClick={openSelector}
+        onClick={() => openSelector(null)}
         className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
       >
         + Añadir ingrediente
