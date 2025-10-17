@@ -17,6 +17,7 @@ import ListaCompra from "./pages/ListaCompra";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import ProtectedRoute from "./components/ProtectedRoute";
+import SelectorIngredientes from "./pages/SelectorIngredientes";
 import { AuthContext } from "./context/AuthContext";
 import logo from "./assets/logo.png";
 
@@ -277,6 +278,16 @@ const isProtected = usuario;
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/ingredientes/seleccionar"
+            element={
+              <ProtectedRoute>
+                <SelectorIngredientes />
+              </ProtectedRoute>
+            }
+          />
+
 
           {/* 🔹 cualquier ruta desconocida → home */}
           <Route path="*" element={<Navigate to="/" replace />} />
