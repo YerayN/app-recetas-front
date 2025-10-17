@@ -15,19 +15,24 @@ export default function IngredientesList({ value = [], onChange }) {
 
   // 🔹 Detectar si se ha vuelto desde el selector visual con un ingrediente
   useEffect(() => {
-    if (location.state?.selectedIngredient) {
-      const ing = location.state.selectedIngredient;
+    const selected = location.state?.selectedIngredient;
+    if (selected) {
       const newList = [
         ...ingredientes,
-        { cantidad: "", unidad: null, ingrediente: ing },
+        { cantidad: "", unidad: null, ingrediente: selected },
       ];
       setIngredientes(newList);
       onChange(newList);
 
-      // limpiar el estado para evitar duplicados al volver atrás
-      navigate(location.pathname, { replace: true, state: {} });
+      // 🧹 limpiar estado y hacer scroll al final
+      setTimeout(() => {
+        navigate(location.pathname, { replace: true, state: {} });
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      }, 100);
     }
-  }, [location.state]);
+  }, [location.key]);
+
+
 
   const handleRemove = (index) => {
     const newList = ingredientes.filter((_, i) => i !== index);
