@@ -66,7 +66,6 @@ const handleSelect = (ing) => {
 
 
 
-  };
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] p-4">
@@ -124,4 +123,4 @@ const handleSelect = (ing) => {
       )}
     </div>
   );
-
+}
