@@ -209,15 +209,7 @@ export default function PlanSemanal() {
         <p className="text-center text-red-500 text-sm mb-4">⚠️ {error}</p>
       )}
 
-      {/* Botón lista */}
-      <div className="flex justify-center mb-6">
-        <button
-          onClick={generarListaCompra}
-          className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white px-4 py-2 rounded-lg shadow-md transition"
-        >
-          🛒 Generar lista de la compra
-        </button>
-      </div>
+      
 
       {/* Lista generada */}
       {mostrarLista && (
