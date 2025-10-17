@@ -1,8 +1,6 @@
-// src/pages/SelectorIngredientes.jsx
 import { useState, useEffect, useMemo } from "react";
 import { fetchIngredientes } from "../services/api";
 
-// 🔹 Etiquetas legibles
 const CATEGORIA_LABEL = {
   frutas_verduras: "Frutas y verduras",
   carnes_charcuteria: "Carnes y charcutería",
@@ -20,7 +18,7 @@ const CATEGORIA_LABEL = {
   otros: "Otros",
 };
 
-// 🔸 Iconos por categoría (Font Awesome)
+// 🔸 Iconos por categoría
 const CATEGORIA_ICONO = {
   frutas_verduras: "fa-solid fa-apple-whole",
   carnes_charcuteria: "fa-solid fa-drumstick-bite",
@@ -36,6 +34,24 @@ const CATEGORIA_ICONO = {
   desayunos_cereales: "fa-solid fa-seedling",
   conservas_caldos: "fa-solid fa-jar",
   otros: "fa-solid fa-box",
+};
+
+// 🎨 Colores por categoría
+const CATEGORIA_COLOR = {
+  frutas_verduras: "text-green-500",
+  carnes_charcuteria: "text-red-500",
+  pescados_marisco: "text-sky-500",
+  aceites_especias_salsas: "text-yellow-500",
+  arroz_legumbres_pasta: "text-amber-500",
+  dulces: "text-pink-400",
+  snacks: "text-orange-400",
+  panaderia: "text-yellow-600",
+  lacteos: "text-indigo-400",
+  bebidas: "text-blue-500",
+  congelados: "text-cyan-400",
+  desayunos_cereales: "text-lime-500",
+  conservas_caldos: "text-rose-400",
+  otros: "text-gray-400",
 };
 
 export default function SelectorIngredientes({ onSelect }) {
@@ -66,6 +82,9 @@ export default function SelectorIngredientes({ onSelect }) {
   const iconoCategoria = (categoria) =>
     CATEGORIA_ICONO[categoria] || CATEGORIA_ICONO.otros;
 
+  const colorCategoria = (categoria) =>
+    CATEGORIA_COLOR[categoria] || CATEGORIA_COLOR.otros;
+
   return (
     <div>
       <div className="sticky top-0 bg-white pb-3 z-10">
@@ -89,7 +108,7 @@ export default function SelectorIngredientes({ onSelect }) {
               <i
                 className={`${iconoCategoria(
                   ing.categoria
-                )} text-3xl text-[#8B5CF6] mb-2`}
+                )} ${colorCategoria(ing.categoria)} text-3xl mb-2`}
               ></i>
               <span className="text-sm text-gray-700">{ing.nombre}</span>
             </button>
@@ -109,7 +128,7 @@ export default function SelectorIngredientes({ onSelect }) {
                   <i
                     className={`${iconoCategoria(
                       ing.categoria
-                    )} text-3xl text-[#8B5CF6] mb-2`}
+                    )} ${colorCategoria(ing.categoria)} text-3xl mb-2`}
                   ></i>
                   <span className="text-sm text-gray-700">{ing.nombre}</span>
                 </button>
