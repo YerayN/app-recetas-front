@@ -10,6 +10,10 @@ export default function IngredientesList({ value = [], onChange }) {
 
   // 🔹 Sincronizar prop -> estado local
   useEffect(() => {
+    setIngredientes(value || []);
+  }, [value]);
+
+  useEffect(() => {
     const selectedList = location.state?.selectedList;
     if (!selectedList) return;
 
@@ -21,6 +25,7 @@ export default function IngredientesList({ value = [], onChange }) {
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     }, 100);
   }, [location.state, navigate, location.pathname, onChange]);
+
 
 
 
