@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom"; // 👈 añadimos useLocation
 import { apiFetch } from "../services/api";
 import IngredientesList from "../components/IngredientesList";
 
 export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation(); // 👈 obtenemos el estado de navegación
 
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -34,6 +35,15 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
 
   // 🔹 Cargar datos al editar receta
   useEffect(() => {
+    // ✅ Si venimos del selector, usar la lista devuelta y no recargar del backend
+    if (location.state?.selectedList) {
+      setIngredientes(location.state.selectedList);
+      // limpiar el estado para no reinyectarlo otra vez
+      navigate(location.pathname, { replace: true, state: null });
+      return;
+    }
+
+    // 🔄 Si no venimos del selector → cargar desde backend
     if (modo === "editar" && id) {
       apiFetch(`recetas/${id}/`)
         .then((data) => {
@@ -44,7 +54,7 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
           setCategoriaNutricional(data.categoria_nutricional || "");
           setImagenExistente(data.imagen || "");
 
-          // ✅ Normalizar ingredientes del backend -> formato que usa IngredientesList
+          // ✅ Normalizar ingredientes del backend
           if (Array.isArray(data.ingredientes)) {
             const normalizados = data.ingredientes.map((item) => {
               const ingrId =
@@ -81,7 +91,8 @@ export default function RecetaForm({ onSubmit, modo = "crear", onUpdate }) {
           console.error("❌ Error cargando receta:", err);
         });
     }
-  }, [modo, id]);
+  }, [modo, id, location.state, navigate, location.pathname]);
+
 
   // 🔹 Guardar receta
   const handleSubmit = async (e) => {

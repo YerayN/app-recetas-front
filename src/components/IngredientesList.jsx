@@ -55,9 +55,14 @@ export default function IngredientesList({ value = [], onChange }) {
   // 🚪 Abrir selector: si pasas índice → modo "reemplazar"; si no → "añadir"
   const openSelector = (replaceIndex = null) => {
     navigate("/ingredientes/seleccionar", {
-      state: { returnTo: location.pathname, replaceIndex },
+      state: {
+        returnTo: location.pathname,
+        ingredientesActuales: ingredientes,  // 👈 pasa lista actual
+        replaceIndex,
+      },
     });
   };
+
 
   const handleRemove = (index) => {
     setIngredientes((prev) => {

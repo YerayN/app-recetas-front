@@ -27,20 +27,22 @@ export default function SelectorIngredientes() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // De dónde venimos (por defecto, la pantalla de nueva receta)
+  // 🔙 Datos del estado de navegación
   const returnTo = location.state?.returnTo || "/recetas/nueva";
+  const replaceIndex = location.state?.replaceIndex ?? null;
+  const ingredientesActuales = location.state?.ingredientesActuales || [];
 
-  // Cargar ingredientes (puedes cambiar a búsqueda por API si prefieres)
+  // 🔹 Cargar ingredientes desde la API
   useEffect(() => {
     fetchIngredientes("")
       .then((data) => setIngredientes(Array.isArray(data) ? data : []))
       .catch((err) => console.error("Error cargando ingredientes:", err));
   }, []);
 
-  // Agrupar por categoría (con label)
+  // 🔹 Agrupar por categoría
   const categorias = useMemo(() => {
     return ingredientes.reduce((acc, ing) => {
-      const key = ing.categoria || "otros"; // viene como código
+      const key = ing.categoria || "otros";
       const label = CATEGORIA_LABEL[key] || "Otros";
       if (!acc[label]) acc[label] = [];
       acc[label].push(ing);
@@ -48,25 +50,32 @@ export default function SelectorIngredientes() {
     }, {});
   }, [ingredientes]);
 
-  // Filtrado en vivo
+  // 🔹 Filtrado en vivo
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return ingredientes.filter((i) => i.nombre.toLowerCase().includes(q));
   }, [ingredientes, search]);
 
-const handleSelect = (ing) => {
-  const replaceIndex =
-    typeof location.state?.replaceIndex === "number"
-      ? location.state.replaceIndex
-      : null;
+  // ✅ Seleccionar ingrediente → crear nueva lista actualizada
+  const handleSelect = (ing) => {
+    const updatedList = [...ingredientesActuales];
 
-  navigate(returnTo, {
-    state: { selectedIngredient: ing, replaceIndex },
-  });
-};
+    if (
+      replaceIndex !== null &&
+      replaceIndex >= 0 &&
+      replaceIndex < updatedList.length
+    ) {
+      // Reemplazar ingrediente en su posición original
+      const prevItem = updatedList[replaceIndex] || {};
+      updatedList[replaceIndex] = { ...prevItem, ingrediente: ing };
+    } else {
+      // Añadir nuevo ingrediente
+      updatedList.push({ cantidad: "", unidad: null, ingrediente: ing });
+    }
 
-
-
+    // 🔁 Volver a la página de origen con la lista actualizada
+    navigate(returnTo, { state: { selectedList: updatedList } });
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] p-4">
